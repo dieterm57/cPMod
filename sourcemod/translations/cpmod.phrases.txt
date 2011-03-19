@@ -1,0 +1,192 @@
+"Phrases"
+{
+	"PluginDisabled"
+	{
+		"#format"   "{1:c},{2:c},{3:c}"
+		"en"        "{1}[{2}cP{3} Mod] Plugin disabled."
+		"fr"        "{1}[{2}cP{3} Mod] Plugin handicapés."
+		"de"        "{1}[{2}cP{3} Mod] Plugin deaktiviert."
+	}
+	"Cleared"
+	{
+		"#format"   "{1:c},{2:c},{3:c}"
+		"en"        "{1}[{2}cP{3} Mod] cPs cleared."
+		"fr"        "{1}[{2}cP{3} Mod] cPs autorisé."
+		"de"        "{1}[{2}cP{3} Mod] cPs gelöscht."
+	}
+	"CheckpointRestored"
+	{
+		"#format"   "{1:c},{2:c},{3:c},{4:c},{5:c}"
+		"en"        "{1}[{2}cP{3} Mod] Cp restored. Type {4}!tele{5} to teleport."
+		"fr"        "{1}[{2}cP{3} Mod] Cp restauré. Type {4}!tele{5} de se téléporter."
+		"de"        "{1}[{2}cP{3} Mod] Cp wiederhergestellt. Gib {4}!tele{5} ein um zu teleportieren."
+	}
+	"TimerDisabled"
+	{
+		"#format"   "{1:c},{2:c},{3:c}"
+		"en"        "{1}[{2}cP{3} Mod] Timer disabled."
+		"fr"        "{1}[{2}cP{3} Mod] Timer handicapés."
+		"de"        "{1}[{2}cP{3} Mod] Timer deaktiviert."
+	}
+	"TimerActiveProtection"
+	{
+		"#format"   "{1:c},{2:c},{3:c},{4:c},{5:c}"
+		"en"        "{1}[{2}cP{3} Mod] Timer active. Teleportation not allowed! Type{4} !stop{5} to quit."
+		"fr"        "{1}[{2}cP{3} Mod] Timer actif. Téléportation pas autorisé! Type{4} !stop{5} pour cesser de fumer."
+		"de"        "{1}[{2}cP{3} Mod] Timer aktiv. Teleportation nicht erlaubt! Gib{4} !stop{5} zum Beenden ein."
+	}
+	"TimerStarted"
+	{
+		"#format"   "{1:c},{2:c},{3:c}"
+		"en"        "{1}[{2}cP{3} Mod] Timer started."
+		"fr"        "{1}[{2}cP{3} Mod] Timer a commencé."
+		"de"        "{1}[{2}cP{3} Mod] Timer gestartet."
+	}
+	"TimerStopped"
+	{
+		"#format"   "{1:c},{2:c},{3:c}{4:c},{5:c}"
+		"en"        "{1}[{2}cP{3} Mod] Timer stopped. Type {4}!restart{5} to activate it!"
+		"fr"        "{1}[{2}cP{3} Mod] Timer arrêté. Type {4}!restart{5} pour l'activer!"
+		"de"        "{1}[{2}cP{3} Mod] Timer gestoppt. Gib {4}!restart{5} ein um ihn zu aktivieren!"
+	}
+	"TimerRestarted"
+	{
+		"#format"   "{1:c},{2:c},{3:c}"
+		"en"        "{1}[{2}cP{3} Mod] Timer restarted."
+		"fr"        "{1}[{2}cP{3} Mod] Timer renouvelées."
+		"de"        "{1}[{2}cP{3} Mod] Timer neu gestartet."
+	}
+	"TimerRecord"
+	{
+		"#format"   "{1:c},{2:c},{3:c},{4:c},{5:s},{6:c},{7:c},{8:s},{9:c}"
+		"en"        "{1}[{2}cP{3} Mod] {4}{5}{6} scored a new record ({7}{8}{9})!"
+		"fr"        "{1}[{2}cP{3} Mod] {4}{5}{6} a marqué un nouveau record ({7}{8}{9})!"
+		"de"        "{1}[{2}cP{3} Mod] {4}{5}{6} hat einen neuen Rekord ({7}{8}{9})!"
+	}
+	"TimerFinished"
+	{
+		"#format"   "{1:c},{2:c},{3:c},{4:c},{5:c},{6:c},{7:c}"
+		"en"        "{1}[{2}cP{3} Mod] You finished the map! Type {6}!restart{7} to retry."
+		"fr"        "{1}[{2}cP{3} Mod] Vous avez terminé la carte! Type {6}!restart{7} pour réessayer."
+		"de"        "{1}[{2}cP{3} Mod] Du hast die Map geschafft! Schreib {6}!restart{7} um es erneut zu versuchen."
+	}
+	"BlockingEnabled"
+	{
+		"#format"   "{1:c},{2:c},{3:c},{4:c},{5:c}"
+		"en"        "{1}[{2}cP{3} Mod] Blocking has been enabled. Type {4}!block{5} to switch."
+		"fr"        "{1}[{2}cP{3} Mod] Blocage a été activé. Type {4}!block{5} pour basculer."
+		"de"        "{1}[{2}cP{3} Mod] Blocking wurde deaktiviert. Gib {4}!block{5} ein um zu wechseln."
+	}
+	"BlockingDisabled"
+	{
+		"#format"   "{1:c},{2:c},{3:c},{4:c},{5:c}"
+		"en"        "{1}[{2}cP{3} Mod] Blocking has been disabled. Type {4}!block{5} to switch."
+		"fr"        "{1}[{2}cP{3} Mod] Blocage a été désactivé. Type {4}!block{5} pour basculer."
+		"de"        "{1}[{2}cP{3} Mod] Blocking wurde deaktiviert. Gib {4}!block{5} ein um zu wechseln."
+	}
+	"NoblockDisabled"
+	{
+		"#format"   "{1:c},{2:c},{3:c}"
+		"en"        "{1}[{2}cP{3} Mod] NoBlock has been disabled..."
+		"fr"        "{1}[{2}cP{3} Mod] NoBlock a été désactivé..."
+		"de"        "{1}[{2}cP{3} Mod] NoBlock wurde deaktiviert..."
+	}
+	"ScoutGiven"
+	{
+		"#format"   "{1:c},{2:c},{3:c}"
+		"en"        "{1}[{2}cP{3} Mod] You have been given a Scout."
+		"fr"        "{1}[{2}cP{3} Mod] Vous avez reçu un Scout."
+		"de"        "{1}[{2}cP{3} Mod] Dir wurde eine Scout gegeben."
+	}
+	"ScoutLimit"
+	{
+		"#format"   "{1:c},{2:c},{3:c}"
+		"en"        "{1}[{2}cP{3} Mod] No more Scouts for you!"
+		"fr"        "{1}[{2}cP{3} Mod] N Scouts plus pour vous!"
+		"de"        "{1}[{2}cP{3} Mod] Keine weiteren Scouts für dich!"
+	}
+	"GravityNormal"
+	{
+		"#format"   "{1:c},{2:c},{3:c},{4:c},{5:c}"
+		"en"        "{1}[{2}cP{3} Mod] Normal gravity. Type {4}!lowgrav{5} to switch."
+		"fr"        "{1}[{2}cP{3} Mod] Gravité normale. Type {4}!lowgrav{5} pour basculer."
+		"de"        "{1}[{2}cP{3} Mod] Normale Schwerkraft. Gib {4}!lowgrav{5} ein um zu wechseln."
+	}
+	"GravityLow"
+	{
+		"#format"   "{1:c},{2:c},{3:c},{4:c},{5:c}"
+		"en"        "{1}[{2}cP{3} Mod] Low gravity. Type {4}!normalgrav{5} to switch."
+		"fr"        "{1}[{2}cP{3} Mod] Diminution de la gravité. Type {4}!normalgrav{5} pour basculer."
+		"de"        "{1}[{2}cP{3} Mod] Geringe Schwerkraft. Gib {4}!normalgrav{5} ein um zu wechseln."
+	}
+	"GravityDisabled"
+	{
+		"#format"   "{1:c},{2:c},{3:c}"
+		"en"        "{1}[{2}cP{3} Mod] Gravity manipulation has been disabled..."
+		"fr"        "{1}[{2}cP{3} Mod] Manipulation de la gravité a été désactivé..."
+		"de"        "{1}[{2}cP{3} Mod] Schwerkraftmanipulation wurde deaktiviert..."
+	}
+	"CpSaved"
+	{
+		"#format"   "{1:c},{2:c},{3:c},{4:c},{5:i}{6:i}{7:c}"
+		"en"        "{1}[{2}cP{3} Mod] cP {4}{5} / {6}{7} saved."
+		"fr"        "{1}[{2}cP{3} Mod] cP {4}{5} / {6}{7} stocké."
+		"de"        "{1}[{2}cP{3} Mod] cP {4}{5} / {6}{7} gespeichert."
+	}
+	"NotOnGround"
+	{
+		"#format"   "{1:c},{2:c},{3:c}"
+		"en"        "{1}[{2}cP{3} Mod] Not supported while in the air..."
+		"fr"        "{1}[{2}cP{3} Mod] Non pris en charge dans les avions..."
+		"de"        "{1}[{2}cP{3} Mod] Nicht möglich solange in der Luft..."
+	}
+	"CpLimit"
+	{
+		"#format"   "{1:c},{2:c},{3:c},{4:c},{5:c}"
+		"en"        "{1}[{2}cP{3} Mod] cPLimit reached! Type {4}!clear{5} to reset."
+		"fr"        "{1}[{2}cP{3} Mod] cPLimit atteint! Type {4}!clear{5} pour réduire."
+		"de"        "{1}[{2}cP{3} Mod] cPLimit erreicht! Gib {4}!clear{5} für einen Reset ein."
+	}
+	"CpNotFound"
+	{
+		"#format"   "{1:c},{2:c},{3:c}"
+		"en"        "{1}[{2}cP{3} Mod] Sorry, no cPs found."
+		"fr"        "{1}[{2}cP{3} Mod] Excuses, pas de cPs trouvé."
+		"de"        "{1}[{2}cP{3} Mod] Entschuldigung, keine cPs gefunden."
+	}
+	"CpTeleported"
+	{
+		"#format"   "{1:c},{2:c},{3:c},{4:c},{5:i}{6:i}{7:c}"
+		"en"        "{1}[{2}cP{3} Mod] You have been teleported to cP {4}{5} / {6}{7}."
+		"fr"        "{1}[{2}cP{3} Mod] Vous avez été déplacé par télépathie à cP {4}{5} / {6}{7}."
+		"de"        "{1}[{2}cP{3} Mod] Du wurdest zu cP {4}{5} / {6}{7} teleportiert."
+	}
+	"NotAuthorized"
+	{
+		"#format"   "{1:c},{2:c},{3:c}"
+		"en"        "{1}[{2}cP{3} Mod] You do not have access to this command."
+		"fr"        "{1}[{2}cP{3} Mod] Vous n'avez pas accès à cette commande."
+		"de"        "{1}[{2}cP{3} Mod] Du hast keinen Zugang zu diesem Befehl."
+	}
+	"CordsNotSet"
+	{
+		"#format"   "{1:c},{2:c},{3:c}"
+		"en"        "{1}[{2}cP{3} Mod] Maptimer activated, but no coordinates found."
+		"fr"        "{1}[{2}cP{3} Mod] Maptimer activé mais pas de coordonnées trouvées."
+		"de"        "{1}[{2}cP{3} Mod] Maptimer aktiviert aber keine Koordinaten gesetzt."
+	}
+	"StartSet"
+	{
+		"#format"   "{1:c},{2:c},{3:c}"
+		"en"        "{1}[{2}cP{3} Mod] Start coordinate set."
+		"fr"        "{1}[{2}cP{3} Mod] Commencer coordonner ensemble."
+		"de"        "{1}[{2}cP{3} Mod] Startkoordinate gesetzt."
+	}
+	"EndSet"
+	{
+		"#format"   "{1:c},{2:c},{3:c}"
+		"en"        "{1}[{2}cP{3} Mod] End coordinate set. Please restart the map."
+		"fr"        "{1}[{2}cP{3} Mod] Fin de coordonner ensemble. S'il vous plaît restar la carte."
+		"de"        "{1}[{2}cP{3} Mod] Endtkoordinate gesetzt. Bitte Map restarten."
+	}
+}
