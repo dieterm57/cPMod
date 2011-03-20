@@ -75,25 +75,26 @@ public TopRecordPanel(client){
 
 public StopTimer(client){
 	if(g_Timer){
-		//if(MapTimer[client] != INVALID_HANDLE){
+		if(MapTimer[client] != INVALID_HANDLE){
+			CloseHandle(MapTimer[client]);
+			MapTimer[client] = INVALID_HANDLE;
 			racing[client] = false;
-			//CloseHandle(MapTimer[client]);
-			//MapTimer[client] = INVALID_HANDLE;
 			
 			PrintToChat(client, "%t", "TimerStopped", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
-		//}
+		}
 	}else
 		PrintToChat(client, "%t", "TimerDisabled", YELLOW,LIGHTGREEN,YELLOW);
 }
 
 public RestartTimer(client){
 	if(g_Timer){
-		//if(MapTimer[client] != INVALID_HANDLE){
+		if(MapTimer[client] != INVALID_HANDLE){
+			CloseHandle(MapTimer[client]);
+			MapTimer[client] = INVALID_HANDLE;
 			racing[client] = false;
-			//CloseHandle(MapTimer[client]);
-			//MapTimer[client] = INVALID_HANDLE;
-		//}
+		}
 		
+		//seems to be obsolent
 		//CreateTimer(2.0, ActionRestartTimer, client);
 		
 		SDKCall(h_Respawn, client);

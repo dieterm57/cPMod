@@ -37,7 +37,7 @@ public Action:Event_player_jump(Handle:event,const String:name[],bool:dontBroadc
 	runjumps[client]++;
 }
 
-public Action:CleanTimer(Handle:timer, any:client){
+public Action:ActionCleanTimer(Handle:timer, any:client){
 	//By Kigen (c) 2008 - Please give me credit. :) //there u are :)
 	new maxent = GetMaxEntities(), String:name[64];
 	for(new i=GetMaxClients(); i<maxent; i++){
@@ -59,6 +59,7 @@ public Action:ActionTraceTimer(Handle:timer, any:client){
 
 public Action:ActionRestartTimer(Handle:timer, any:client){
 	MapTimer[client] = CreateTimer(1.0, ActionMapTimer, client, TIMER_REPEAT);
+	PrintToChatAll("created timer");
 }
 
 
@@ -155,9 +156,6 @@ public Action:ActionMapTimer(Handle:timer, any:client){
 				runtime[client]++;
 				
 				if(IsInsideBox(pcords, POS_STOP)){
-					decl String:test[32];
-					Format(test, 32, "time:%i, jumps:%i",recordtime,recordjumps);
-					PrintToChatAll(test);
 					if(g_RecordType == RECORD_TIME){
 						if(runtime[client] < recordtime){
 							decl String:name[MAX_NAME_LENGTH];
@@ -180,16 +178,20 @@ public Action:ActionMapTimer(Handle:timer, any:client){
 					
 					db_updatePlayerRecord(client);
 					
+					MapTimer[client] = INVALID_HANDLE;
 					racing[client] = false;
+					
+					return Plugin_Stop;
 				}
 			}
 		}
+		return Plugin_Continue;
 	} else{
-		racing[client] = false;
 		MapTimer[client] = INVALID_HANDLE;
+		racing[client] = false;
+		
 		return Plugin_Stop;
 	}
-	return Plugin_Continue;
 }
 
 public Action:Event_flashbang_detonate(Handle:event,const String:name[],bool:dontBroadcast){
@@ -202,54 +204,4 @@ public Action:Event_weapon_fire(Handle:event,const String:name[],bool:dontBroadc
 	new client = GetClientOfUserId(GetEventInt(event,"userid"));
 	if(StrEqual(weaponname,"flashbang"))
 		GivePlayerItem(client, "weapon_flashbang");
-}
-
-public Action:Command_Say(client, args){
-	if(client != 0 && IsClientInGame(client) && IsPlayerAlive(client)){
-		decl String:text[192];
-		GetCmdArgString(text, 192);
-		new startidx = 0;
-		
-		if(text[strlen(text)-1] == '"'){
-			text[strlen(text)-1] = '\0';
-			startidx = 1;
-		}
-		if(StrEqual(text[startidx], "!block"))
-			ToogleBlock(client);
-		else if(StrEqual(text[startidx], "!lowgrav"))
-			ClientGravity(client,0.5);
-		else if(StrEqual(text[startidx], "!normalgrav"))
-			ClientGravity(client,1.0);
-		else if(StrEqual(text[startidx], "!scout"))
-			ScoutClient(client);
-		
-		else if(StrEqual(text[startidx], "!next"))
-			TeleClient(client,1);
-		else if(StrEqual(text[startidx], "!prev"))
-			TeleClient(client,-1);
-		else if(StrEqual(text[startidx], "!save"))
-			SaveClientLocation(client);
-		else if(StrEqual(text[startidx], "!tele"))
-			TeleClient(client,0);
-		//else if(StrEqual(text[startidx], "!cpadmin"))
-		//	CpAdminPanel(client); 
-		else if(StrEqual(text[startidx], "!cp"))
-			TeleMenu(client);
-		else if(StrEqual(text[startidx], "!clear"))
-			ClearClient(client);
-		else if(StrEqual(text[startidx], "!help"))
-			HelpPanel(client);
-		
-		else if(StrEqual(text[startidx], "!record"))
-			RecordPanel(client);
-		else if(StrEqual(text[startidx], "!restart"))
-			RestartTimer(client);
-		else if(StrEqual(text[startidx], "!stop"))
-			StopTimer(client);
-		else if(StrEqual(text[startidx], "!wr"))
-			TopRecordPanel(client);
-		
-		return Plugin_Continue;
-	}
-	return Plugin_Continue;
 }

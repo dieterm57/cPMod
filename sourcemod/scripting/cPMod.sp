@@ -179,7 +179,7 @@ new Handle:cvarSpeedunit = INVALID_HANDLE;
 new Handle:TraceTimer[MAXPLAYERS+1];
 new Handle:MapTimer[MAXPLAYERS+1];
 new bool:racing[MAXPLAYERS+1];
-new Handle:CleanupTimer = INVALID_HANDLE;
+new Handle:CleanTimer = INVALID_HANDLE;
 new Handle:CpSetterTimer = INVALID_HANDLE;
 new Float:cpsetbcords[3];
 new Float:cpsetecords[3];
@@ -298,7 +298,6 @@ public OnPluginStart(){
 	PrepSDKCall_SetFromConf(h_GameConf, SDKConf_Signature, "RoundRespawn");
 	h_Respawn = EndPrepSDKCall();
 	
-	//RegConsoleCmd("say", Command_Say);
 	RegConsoleCmd("sm_block", Client_Block, "Toogles blocking");
 	RegConsoleCmd("sm_lowgrav", Client_Lowgrav, "Toogles blocking");
 	RegConsoleCmd("sm_normalgrav", Client_Normalgrav, "Toogles blocking");
@@ -313,7 +312,7 @@ public OnPluginStart(){
 	RegConsoleCmd("sm_help", Client_Help, "Toogles blocking");
 	
 	RegConsoleCmd("sm_record", Client_Record, "Toogles blocking");
-	//RegConsoleCmd("sm_restart", Client_Restart, "Toogles blocking");
+	RegConsoleCmd("sm_restart", Client_Restart, "Toogles blocking");
 	RegConsoleCmd("sm_stop", Client_Stop, "Toogles blocking");
 	RegConsoleCmd("sm_wr", Client_Wr, "Toogles blocking");
 	
@@ -356,7 +355,7 @@ public OnMapStart(){
 	}
 	
 	if(g_CleanupGuns)
-		CleanupTimer = CreateTimer(10.0, CleanTimer, _, TIMER_REPEAT);
+		CleanTimer = CreateTimer(10.0, ActionCleanTimer, _, TIMER_REPEAT);
 }
 
 public OnMapEnd(){
@@ -370,6 +369,8 @@ public OnMapEnd(){
 			TraceTimer[i] = INVALID_HANDLE;
 		}
 	}
+	CloseHandle(CleanTimer);
+	CleanTimer = INVALID_HANDLE;
 }
 
 
@@ -406,11 +407,12 @@ public OnSettingChanged(Handle:convar, const String:oldValue[], const String:new
 	} else if(convar == cvarCleanupGuns){
 		if(newValue[0] == '1'){
 			g_CleanupGuns = true;
-			CleanupTimer = CreateTimer(10.0, CleanTimer, _, TIMER_REPEAT);
+			//seems to be obsolent
+			//CleanTimer = CreateTimer(10.0, ActionCleanTimer, _, TIMER_REPEAT);
 		} else{
 			g_CleanupGuns = false;
-			CloseHandle(CleanupTimer);
-			CleanupTimer = INVALID_HANDLE;
+			CloseHandle(CleanTimer);
+			CleanTimer = INVALID_HANDLE;
 		}
 	} else if(convar == cvarRestore){
 		if(newValue[0] == '1')
@@ -477,10 +479,13 @@ public OnSettingChanged(Handle:convar, const String:oldValue[], const String:new
 
 public OnClientPostAdminCheck(client){
 	if(g_Enabled && IsClientInGame(client) && !IsFakeClient(client)){
-		HelpPanel(client);
-		
+		TraceTimer[client] = INVALID_HANDLE;
+		MapTimer[client] = INVALID_HANDLE;
+
 		//if(g_Restore && !g_Timer)
 		db_selectCheckpoint(client);
+		
+		HelpPanel(client);
 	}
 }
 
