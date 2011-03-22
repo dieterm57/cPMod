@@ -235,7 +235,8 @@ public OnPluginStart(){
 	
 	cvarCleanupGuns  = CreateConVar("sm_cp_cleanupguns", "1", "Enable/Disable automatic removal of weapons.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
 	HookConVarChange(cvarCleanupGuns, OnSettingChanged);
-	g_WeaponParent = FindSendPropOffs("CBaseCombatWeapon", "m_hOwnerEntity");
+	g_CleanupGuns    = GetConVarBool(cvarCleanupGuns);
+	g_WeaponParent   = FindSendPropOffs("CBaseCombatWeapon", "m_hOwnerEntity");
 	
 	cvarTimer      = CreateConVar("sm_cp_timer", "1", "Enable/Disable map based timer.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
 	g_Timer        = GetConVarBool(cvarTimer);
@@ -362,17 +363,17 @@ public OnMapStart(){
 
 public OnMapEnd(){
 	for(new i = 0; i <= MAXPLAYERS; i++){
-		if(MapTimer[i] != INVALID_HANDLE){
+		if(g_Timer && MapTimer[i] != INVALID_HANDLE){
 			CloseHandle(MapTimer[i]);
 			MapTimer[i] = INVALID_HANDLE;
 		}
-		if(TraceTimer[i] != INVALID_HANDLE){
+		if(g_Tracer && TraceTimer[i] != INVALID_HANDLE){
 			CloseHandle(TraceTimer[i]);
 			TraceTimer[i] = INVALID_HANDLE;
 		}
 	}
 	
-	if(CleanTimer != INVALID_HANDLE){
+	if(g_CleanupGuns && CleanTimer != INVALID_HANDLE){
 		CloseHandle(CleanTimer);
 		CleanTimer = INVALID_HANDLE;
 	}
@@ -496,14 +497,15 @@ public OnClientPostAdminCheck(client){
 
 public OnClientDisconnect(client){
 	if(g_Enabled){
-		if(TraceTimer[client] != INVALID_HANDLE){
+		if(g_Tracer && TraceTimer[client] != INVALID_HANDLE){
 				CloseHandle(TraceTimer[client]);
 				TraceTimer[client] = INVALID_HANDLE;
 		}
-		if(MapTimer[client] != INVALID_HANDLE){
+		if(g_Timer && MapTimer[client] != INVALID_HANDLE){
 				CloseHandle(MapTimer[client]);
 				MapTimer[client] = INVALID_HANDLE;
 		}
+		
 		new current = currentcp[client];
 		if(g_Restore && current > 0){
 			db_updatePlayerCheckpoint(client, current);
