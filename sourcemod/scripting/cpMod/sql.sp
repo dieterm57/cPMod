@@ -5,8 +5,8 @@ new String:sql_createPlayer[] = "CREATE TABLE IF NOT EXISTS player (steamid VARC
 
 new String:sqlite_insertMap[] = "INSERT INTO map (mapname) VALUES('%s');";
 new String:sql_insertMap[] = "INSERT INTO map (mapname) VALUES('%s');";
-new String:sqlite_insertPlayer[] = "INSERT INTO player (steamid, mapname) VALUES('%s', '%s');";
-new String:sql_insertPlayer[] = "INSERT IGNORE INTO player (steamid, mapname) VALUES('%s', '%s');";
+new String:sqlite_insertPlayer[] = "INSERT INTO player (steamid, mapname, name) VALUES('%s', '%s', '%s');";
+new String:sql_insertPlayer[] = "INSERT INTO player (steamid, mapname, name) VALUES('%s', '%s', '%s');";
 
 new String:sqlite_updateMapStart[] = "UPDATE map SET start0 = '%s', start1 = '%s' WHERE mapname = '%s';";
 new String:sql_updateMapStart[] = "UPDATE map SET start0 = '%s', start1 = '%s' WHERE mapname = '%s';";
@@ -100,12 +100,17 @@ public db_insertMap(){
 public db_insertPlayer(client){
 	decl String:query[255];
 	decl String:steamid[32];
+	decl String:uname[MAX_NAME_LENGTH];
 	GetClientAuthString(client, steamid, 32);
+	GetClientName(client, uname, MAX_NAME_LENGTH);
+	
+	decl String:name[MAX_NAME_LENGTH*2+1];
+	SQL_QuoteString(db, uname, name, MAX_NAME_LENGTH*2+1);
 	
 	if(g_dbtype == MYSQL)
-		Format(query, 255, sql_insertPlayer, steamid, mapname);
+		Format(query, 255, sql_insertPlayer, steamid, mapname, name);
 	else
-		Format(query, 255, sqlite_insertPlayer, steamid, mapname);
+		Format(query, 255, sqlite_insertPlayer, steamid, mapname, name);
 		
 	SQL_TQuery(db, SQL_CheckCallback, query);
 }
@@ -135,10 +140,18 @@ public db_updateMapStartStop(client, String:bcords[], String:ecords[], pos){
 
 public db_updatePlayerCheckpoint(client, current){
 	decl String:query[255];
-	decl String:name[MAX_NAME_LENGTH];
+	decl String:uname[MAX_NAME_LENGTH];
 	decl String:steamid[32];
-	GetClientName(client, name, MAX_NAME_LENGTH);
+	GetClientName(client, uname, MAX_NAME_LENGTH);
 	GetClientAuthString(client, steamid, 32);
+	
+	decl String:name[MAX_NAME_LENGTH*2+1];
+	SQL_QuoteString(db, uname, name, MAX_NAME_LENGTH*2+1);
+	
+	if(g_dbtype == MYSQL)
+		Format(query, 255, sql_insertPlayer, steamid, mapname, name);
+	else
+		Format(query, 255, sqlite_insertPlayer, steamid, mapname, name);
 	
 	decl String:cords[38];
 	Format(cords, 38, "%f:%f:%f",playercords[client][current][0],playercords[client][current][1],playercords[client][current][2]);
@@ -155,10 +168,18 @@ public db_updatePlayerCheckpoint(client, current){
 
 public db_updatePlayerRecord(client){
 	decl String:query[255];
-	decl String:name[MAX_NAME_LENGTH];
+	decl String:uname[MAX_NAME_LENGTH];
 	decl String:steamid[32];
-	GetClientName(client, name, MAX_NAME_LENGTH);
+	GetClientName(client, uname, MAX_NAME_LENGTH);
 	GetClientAuthString(client, steamid, 32);
+	
+	decl String:name[MAX_NAME_LENGTH*2+1];
+	SQL_QuoteString(db, uname, name, MAX_NAME_LENGTH*2+1);
+	
+	if(g_dbtype == MYSQL)
+		Format(query, 255, sql_insertPlayer, steamid, mapname, name);
+	else
+		Format(query, 255, sqlite_insertPlayer, steamid, mapname, name);
 	
 	if(g_dbtype == MYSQL)
 		Format(query, 255, sql_updatePlayerRecord, name, runjumps[client], runtime[client], steamid, mapname);
