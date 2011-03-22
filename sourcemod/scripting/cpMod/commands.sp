@@ -74,6 +74,9 @@ public TopRecordPanel(client){
 }
 
 public StopTimer(client){
+	if(!IsPlayerAlive(client) || GetClientTeam(client) == 1)
+		return;
+	
 	if(g_Timer){
 		if(MapTimer[client] != INVALID_HANDLE){
 			CloseHandle(MapTimer[client]);
@@ -87,6 +90,9 @@ public StopTimer(client){
 }
 
 public RestartTimer(client){
+	if(!IsPlayerAlive(client) || GetClientTeam(client) == 1)
+		return;
+	
 	if(g_Timer){
 		if(MapTimer[client] != INVALID_HANDLE){
 			CloseHandle(MapTimer[client]);
@@ -94,7 +100,7 @@ public RestartTimer(client){
 			racing[client] = false;
 		}
 		
-		//seems to be obsolent
+		//seems to be superfluous
 		//CreateTimer(2.0, ActionRestartTimer, client);
 		
 		SDKCall(h_Respawn, client);
@@ -103,7 +109,10 @@ public RestartTimer(client){
 }
 
 public ToogleBlock(client){
-	if(g_Noblock && g_PlayerBlock && GetClientTeam(client) != 0){
+	if(!IsPlayerAlive(client) || GetClientTeam(client) == 1)
+		return;
+	
+	if(g_Noblock && g_PlayerBlock){
 		if(blocking[client]){
 			SetEntData(client, FindSendPropOffs("CBaseEntity", "m_CollisionGroup"), 2, 4, true);
 			blocking[client] = false;
@@ -118,6 +127,9 @@ public ToogleBlock(client){
 }
 
 public ScoutClient(client){
+	if(!IsPlayerAlive(client) || GetClientTeam(client) == 1)
+		return;
+		
 	if(scouts[client] < g_Scoutlimit){
 		GivePlayerItem(client, "weapon_scout");
 		scouts[client] ++;
@@ -127,7 +139,10 @@ public ScoutClient(client){
 }
 
 public ClientGravity(client,Float:amount){
-	if(g_Gravity && GetClientTeam(client) != 0){
+	if(!IsPlayerAlive(client) || GetClientTeam(client) == 1)
+		return;
+		
+	if(g_Gravity){
 		SetEntityGravity(client, amount);
 		if(amount>=1.0)
 			PrintToChat(client, "%t", "GravityNormal", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
@@ -138,6 +153,9 @@ public ClientGravity(client,Float:amount){
 }
 
 public SaveClientLocation(client){
+	if(!IsPlayerAlive(client) || GetClientTeam(client) == 1)
+		return;
+	
 	if(g_Enabled){
 		if(!racing[client]){
 			if(GetEntDataEnt2(client, FindSendPropOffs("CBasePlayer", "m_hGroundEntity")) != -1){
@@ -166,6 +184,9 @@ public SaveClientLocation(client){
 }
 
 public TeleClient(client,pos){
+	if(!IsPlayerAlive(client) || GetClientTeam(client) == 1)
+		return;
+	
 	if(g_Enabled){
 		if(!racing[client]){
 			new current = currentcp[client];
@@ -182,7 +203,7 @@ public TeleClient(client,pos){
 			
 			new actual = current+pos;
 			
-			if((playercords[client][actual][0] == 0) && (playercords[client][actual][1] == 0) && (playercords[client][actual][2] == 0)){
+			if(actual < 0 || (playercords[client][actual][0] == 0.0 && playercords[client][actual][1] == 0.0 && playercords[client][actual][2] == 0.0)){
 				PrintToChat(client, "%t", "CpNotFound", YELLOW,LIGHTGREEN,YELLOW);
 			}else{
 				TeleportEntity(client, playercords[client][actual],playerangles[client][actual],NULL_VECTOR);
@@ -200,6 +221,9 @@ public TeleClient(client,pos){
 }
 
 public TeleMenu(client){
+	if(!IsPlayerAlive(client) || GetClientTeam(client) == 1)
+		return;
+	
 	if(g_Enabled){
 		new Handle:menu = CreateMenu(TeleMenuHandler);
 		SetMenuTitle(menu, "byaaaaah's [cP Mod]");
@@ -229,10 +253,14 @@ public TeleMenuHandler(Handle:menu, MenuAction:action, param1, param2){
 }
 
 public ClearClient(client){
+	if(!IsPlayerAlive(client) || GetClientTeam(client) == 1)
+		return;
+	
 	if(g_Enabled){
 		currentcp[client] = 0;
 		wholecp[client] = 0;
 		
+		/* superfluous
 		for(new i = 0; i < CPLIMIT; i++){
 			playercords[client][i][0]=0.0;
 			playercords[client][i][1]=0.0;
@@ -240,7 +268,8 @@ public ClearClient(client){
 			playerangles[client][i][0]=0.0;
 			playerangles[client][i][1]=0.0;
 			playerangles[client][i][2]=0.0;
-		}
+		}*/
+		
 		PrintToChat(client, "%t", "Cleared", YELLOW,LIGHTGREEN,YELLOW);
 	} else
 		PrintToChat(client, "%t", "PluginDisabled", YELLOW,LIGHTGREEN,YELLOW);
