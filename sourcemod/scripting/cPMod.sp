@@ -43,10 +43,10 @@ sm_cp_scoutlimit   - <0|10> Sets the scout limit for each player.
 sm_cp_gravity      - <1|0> Enable/Disable player gravity.
 sm_cp_healclient   - <1|0> Enable/Disable healing of falldamage.
 sm_cp_hintsound    - <1|0> Enable/Disable playing sound on popup.
-sm_cp_recourdsound - <"quake/holyshit.wav"> Sets the sound that is played on new record.
+sm_cp_recordsound  - <"quake/holyshit.wav"> Sets the sound that is played on new record.
 
 Admin:
-cm_cp_cpadmin        - Displays the admin menu
+sm_cp_cpadmin        - Displays the admin menu
 sm_cp_resetcp        - Resets checkpoints of all players.
 sm_cp_purgecp <days> - Purges checkpoints.
 sm_cp_resettimer     - Resets timers of all players
@@ -489,7 +489,7 @@ public OnClientPostAdminCheck(client){
 		MapTimer[client] = INVALID_HANDLE;
 
 		//if(g_Restore && !g_Timer)
-		db_selectCheckpoint(client);
+		db_selectPlayerCheckpoint(client);
 		
 		HelpPanel(client);
 	}

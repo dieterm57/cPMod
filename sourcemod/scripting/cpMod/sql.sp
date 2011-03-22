@@ -231,10 +231,15 @@ public SQL_SelectRecordCallback(Handle:owner, Handle:hndl, const String:error[],
 		new Handle:panel = CreatePanel();
 		DrawPanelText(panel, "byaaaaah's [cP Mod] - TopRecord");
 		DrawPanelText(panel, " ");
-		DrawPanelText(panel, vrname);
-		DrawPanelText(panel, vrjumps);
-		DrawPanelText(panel, vrtime);
-		DrawPanelText(panel, vrdate);
+		
+		if(jumps != -1 && time != -1){
+			DrawPanelText(panel, vrname);
+			DrawPanelText(panel, vrjumps);
+			DrawPanelText(panel, vrtime);
+			DrawPanelText(panel, vrdate);
+		} else
+			DrawPanelText(panel, "No record found...");
+
 		DrawPanelItem(panel, "exit");
 		SendPanelToClient(panel, client, RecordPanelHandler, 10);
 		CloseHandle(panel);
@@ -279,8 +284,9 @@ public SQL_SelectTopRecordTimeCallback(Handle:owner, Handle:hndl, const String:e
 			DrawPanelText(panel, value);
 			i++;
 		}
-	} else
-		DrawPanelText(panel, "No record found...");
+		if(i == 1)
+			DrawPanelText(panel, "No record found...");
+	}
 	
 	
 	DrawPanelItem(panel, "exit");
@@ -322,8 +328,10 @@ public SQL_SelectTopRecordJumpCallback(Handle:owner, Handle:hndl, const String:e
 			DrawPanelText(panel, value);
 			i++;
 		}
-	} else
-		DrawPanelText(panel, "No record found...");
+		if(i == 1)
+			DrawPanelText(panel, "No record found...");
+	} 
+	
 	
 	DrawPanelItem(panel, "exit");
 	SendPanelToClient(panel, client, TopRecordJumpPanelHandler, 10);
@@ -387,7 +395,7 @@ public SQL_SelectMapStartStopCallback(Handle:owner, Handle:hndl, const String:er
 		db_insertMap();
 }
 
-public db_selectCheckpoint(client){
+public db_selectPlayerCheckpoint(client){
 	decl String:query[255];
 	decl String:steamid[32];
 	GetClientAuthString(client, steamid, 32);
@@ -411,7 +419,7 @@ public SQL_SelectCheckpointCallback(Handle:owner, Handle:hndl, const String:erro
 		SQL_FetchString(hndl, 0, cords, 32);
 		SQL_FetchString(hndl, 1, angles, 32);
 		
-		if(StrEqual(cords, "0:0:0") || StrEqual(angles, "0:0:0")){
+		if(StrEqual(cords, "0:0:0") || StrEqual(cords, "0.000000:0.000000:0.000000") || StrEqual(angles, "0:0:0") || StrEqual(angles, "0.000000:0.000000:0.000000") ){
 			currentcp[client] = 0;
 			wholecp[client] = 0;
 		} else{
