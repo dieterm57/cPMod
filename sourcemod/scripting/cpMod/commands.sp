@@ -104,7 +104,7 @@ public RestartTimer(client){
 		//CreateTimer(2.0, ActionRestartTimer, client);
 		
 		SDKCall(h_Respawn, client);
-	} else
+	}else
 		PrintToChat(client, "%t", "TimerDisabled", YELLOW,LIGHTGREEN,YELLOW);
 }
 
@@ -157,29 +157,26 @@ public SaveClientLocation(client){
 		return;
 	
 	if(g_Enabled){
-		if(!racing[client]){
-			if(GetEntDataEnt2(client, FindSendPropOffs("CBasePlayer", "m_hGroundEntity")) != -1){
-				new whole = wholecp[client];
+		if(GetEntDataEnt2(client, FindSendPropOffs("CBasePlayer", "m_hGroundEntity")) != -1){
+			new whole = wholecp[client];
+			
+			if(whole < CPLIMIT){
+				GetClientAbsOrigin(client,playercords[client][whole]);
+				GetClientAbsAngles(client,playerangles[client][whole]);
 				
-				if(whole < CPLIMIT){
-					GetClientAbsOrigin(client,playercords[client][whole]);
-					GetClientAbsAngles(client,playerangles[client][whole]);
-					
-					currentcp[client] = wholecp[client];
-					wholecp[client] ++;
-					
-					PrintToChat(client, "%t", "CpSaved", YELLOW,LIGHTGREEN,YELLOW,GREEN,whole+1,whole+1,YELLOW);
-					
-					EmitSoundToClient(client,"buttons/blip1.wav",client);
-					TE_SetupBeamRingPoint(playercords[client][whole],10.0,200.0,BeamSpriteRing1,0,0,10,1.0,50.0,0.0,{255,255,255,255},0,0);
-					TE_SendToClient(client);
-				} else
-					PrintToChat(client, "%t", "CpLimit", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
-			} else
-				PrintToChat(client, "%t", "NotOnGround", YELLOW,LIGHTGREEN,YELLOW);
-		} else
-			PrintToChat(client, "%t", "TimerActiveProtection", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
-	} else
+				currentcp[client] = wholecp[client];
+				wholecp[client] ++;
+				
+				PrintToChat(client, "%t", "CpSaved", YELLOW,LIGHTGREEN,YELLOW,GREEN,whole+1,whole+1,YELLOW);
+				
+				EmitSoundToClient(client,"buttons/blip1.wav",client);
+				TE_SetupBeamRingPoint(playercords[client][whole],10.0,200.0,BeamSpriteRing1,0,0,10,1.0,50.0,0.0,{255,255,255,255},0,0);
+				TE_SendToClient(client);
+			}else
+				PrintToChat(client, "%t", "CpLimit", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
+		}else
+			PrintToChat(client, "%t", "NotOnGround", YELLOW,LIGHTGREEN,YELLOW);
+	}else
 		PrintToChat(client, "%t", "PluginDisabled", YELLOW,LIGHTGREEN,YELLOW);
 }
 
@@ -203,7 +200,7 @@ public TeleClient(client,pos){
 			
 			new actual = current+pos;
 			
-			if(actual < 0 || (playercords[client][actual][0] == 0.0 && playercords[client][actual][1] == 0.0 && playercords[client][actual][2] == 0.0)){
+			if(actual < 0 || actual > whole || (playercords[client][actual][0] == 0.0 && playercords[client][actual][1] == 0.0 && playercords[client][actual][2] == 0.0)){
 				PrintToChat(client, "%t", "CpNotFound", YELLOW,LIGHTGREEN,YELLOW);
 			}else{
 				TeleportEntity(client, playercords[client][actual],playerangles[client][actual],NULL_VECTOR);
@@ -214,9 +211,9 @@ public TeleClient(client,pos){
 				TE_SetupBeamRingPoint(playercords[client][actual],10.0,200.0,BeamSpriteRing2,0,0,10,1.0,50.0,0.0,{255,255,255,255},0,0);
 				TE_SendToClient(client);
 			}
-		} else
+		}else
 			PrintToChat(client, "%t", "TimerActiveProtection", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
-	} else
+	}else
 		PrintToChat(client, "%t", "PluginDisabled", YELLOW,LIGHTGREEN,YELLOW);
 }
 
@@ -235,7 +232,7 @@ public TeleMenu(client){
 		SetMenuExitButton(menu, true);
 		SetMenuOptionFlags(menu, MENUFLAG_BUTTON_EXIT);
 		DisplayMenu(menu, client, MENU_TIME_FOREVER);
-	} else
+	}else
 		PrintToChat(client, "%t", "PluginDisabled", YELLOW,LIGHTGREEN,YELLOW);
 }
 public TeleMenuHandler(Handle:menu, MenuAction:action, param1, param2){
@@ -271,7 +268,7 @@ public ClearClient(client){
 		}*/
 		
 		PrintToChat(client, "%t", "Cleared", YELLOW,LIGHTGREEN,YELLOW);
-	} else
+	}else
 		PrintToChat(client, "%t", "PluginDisabled", YELLOW,LIGHTGREEN,YELLOW);
 }
 
