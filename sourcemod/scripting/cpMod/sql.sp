@@ -369,7 +369,6 @@ public SQL_SelectMapStartStopCallback(Handle:owner, Handle:hndl, const String:er
 		if(StrEqual(start0_cords, "0:0:0") || StrEqual(start1_cords, "0:0:0") || StrEqual(end0_cords, "0:0:0") || StrEqual(end1_cords, "0:0:0")){
 			g_CordsSet = false;
 		}else{
-			g_CordsSet = true;
 			decl String:cbuff[3][32]
 			ExplodeString(start0_cords, ":", cbuff, 3, 32);
 			maptimer_start0_cords[0] = StringToFloat(cbuff[0]);
@@ -390,6 +389,7 @@ public SQL_SelectMapStartStopCallback(Handle:owner, Handle:hndl, const String:er
 			maptimer_end1_cords[0] = StringToFloat(cbuff[0]);
 			maptimer_end1_cords[1] = StringToFloat(cbuff[1]);
 			maptimer_end1_cords[2] = StringToFloat(cbuff[2]);
+			g_CordsSet = true;
 		}
 	} else
 		db_insertMap();

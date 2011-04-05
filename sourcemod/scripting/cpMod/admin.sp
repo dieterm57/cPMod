@@ -41,8 +41,10 @@ public CpAdminPanelStartHandler(Handle:menu, MenuAction:action, param1, param2){
 			SetTimerCords(param1, POS_START);
 			CpAdminPanel(param1);
 		}
-	}else if(action == MenuAction_End)
+	}else if(action == MenuAction_End){
+		CloseHandle(CpSetterTimer);
 		CloseHandle(menu);
+	}
 }
 
 public CpAdminPanelEnd(client){
@@ -59,13 +61,15 @@ public CpAdminPanelEndHandler(Handle:menu, MenuAction:action, param1, param2){
 			SetTimerCords(param1, POS_STOP);
 			CpAdminPanel(param1);
 		}
-	}else if(action == MenuAction_End)
+	}else if(action == MenuAction_End){
+		CloseHandle(CpSetterTimer);
 		CloseHandle(menu);
+	}
 }
 
 
 public Action:CpSetTimer(Handle:timer, any:client){
-	if(client != 0 && IsPlayerAlive(client) && IsClientInGame(client)){
+	if(client != 0 && IsClientInGame(client) && IsPlayerAlive(client)){
 		GetClientAbsOrigin(client,cpsetecords);
 		
 		decl Float:leftbottomfront[3];
@@ -120,7 +124,7 @@ public Action:CpSetTimer(Handle:timer, any:client){
 		
 		TE_SetupBeamPoints(rightbottomfront,righttopfront,BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,255,0,255},0);TE_SendToAll();
 		TE_SetupBeamPoints(leftbottomback,lefttopback,BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,255,0,255},0);TE_SendToAll();
-	}else
+	} else
 		CloseHandle(CpSetterTimer);
 }
 

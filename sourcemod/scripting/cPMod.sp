@@ -1,6 +1,6 @@
 /*
 [cP mod]
-- version 2.0.0
+- version 2.0.1
 
 This plugin allows users to save their location and teleport later.
 It further provides some features for non skilled bHopper like low gravity or a scout.
@@ -44,6 +44,7 @@ sm_cp_gravity      - <1|0> Enable/Disable player gravity.
 sm_cp_healclient   - <1|0> Enable/Disable healing of falldamage.
 sm_cp_hintsound    - <1|0> Enable/Disable playing sound on popup.
 sm_cp_recordsound  - <"quake/holyshit.wav"> Sets the sound that is played on new record.
+sm_cp_speedunit    - <1|0> Changes the unit of speed displayed in timerpanel [0=default] [1=kmh].
 
 Admin:
 sm_cp_cpadmin        - Displays the admin menu
@@ -107,17 +108,21 @@ Versions
     - Fixed adding of start/stop zones
     - Fixed special chars in player names
     - Increased stability & performance
+2.0.1
+    - Enabled saving while timer running
 */
 
 #include <sourcemod>
 #include <sdktools>
 
-
+//todo:
+//find a better solution than defining two variables!
 
 #define ADMIN_LEVEL ADMFLAG_ROOT
-#define CPLIMIT 5
+#define Admin_Level Admin_Root
+#define CPLIMIT 10
 
-#define VERSION "2.0.0"
+#define VERSION "2.0.1"
 
 #define YELLOW 0x01
 #define TEAMCOLOR 0x02
@@ -139,6 +144,9 @@ new Handle:db = INVALID_HANDLE;
 
 new Handle:cvarEnable = INVALID_HANDLE;
 new bool:g_Enabled = false;
+
+new Handle:cvarCpLimit = INVALID_HANDLE;
+new g_CpLimit = 0;
 
 new Handle:h_GameConf;
 new Handle:h_Respawn;
@@ -189,8 +197,11 @@ new Float:maptimer_start0_cords[3];
 new Float:maptimer_start1_cords[3];
 new Float:maptimer_end0_cords[3];
 new Float:maptimer_end1_cords[3];
+
 new Float:playercords[MAXPLAYERS+1][CPLIMIT][3];
 new Float:playerangles[MAXPLAYERS+1][CPLIMIT][3];
+
+
 new currentcp[MAXPLAYERS+1];
 new wholecp[MAXPLAYERS+1];
 new bool:blocking[MAXPLAYERS+1];
@@ -202,7 +213,7 @@ new String:mapname[32];
 new recordjumps;
 new recordtime;
 
-new String:recordSound[64];
+new String:recordSound[32];
 
 new BeamSpriteFollow,BeamSpriteRing1,BeamSpriteRing2;
 
@@ -232,6 +243,12 @@ public OnPluginStart(){
 	cvarEnable     = CreateConVar("sm_cp_enabled", "1", "Enable/Disable the plugin.", FCVAR_PLUGIN|FCVAR_NOTIFY, true, 0.0, true, 1.0);
 	g_Enabled      = GetConVarBool(cvarEnable);
 	HookConVarChange(cvarEnable, OnSettingChanged);
+	
+	cvarCpLimit  = CreateConVar("sm_cp_cplimit", "10", "Sets the limit of checkpoints per player.", FCVAR_PLUGIN, true, 1.0, true, 255.0);
+	g_CpLimit = GetConVarInt(cvarCpLimit);
+	
+	//playercords = new Float:[MAXPLAYERS+1][g_CpLimit][3];
+	//playerangles = new Float:[MAXPLAYERS+1][g_CpLimit][3];
 	
 	cvarCleanupGuns  = CreateConVar("sm_cp_cleanupguns", "1", "Enable/Disable automatic removal of weapons.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
 	HookConVarChange(cvarCleanupGuns, OnSettingChanged);
@@ -290,7 +307,7 @@ public OnPluginStart(){
 	HookConVarChange(cvarHintSound, OnSettingChanged);
 		
 	cvarRecordSound = CreateConVar("sm_cp_recourdsound", "quake/holyshit.mp3", "Sets the sound that is played on new record.", FCVAR_PLUGIN);
-	GetConVarString(cvarRecordSound, recordSound, 64);
+	GetConVarString(cvarRecordSound, recordSound, 32);
 	
 	cvarSpeedunit    = CreateConVar("sm_cp_speedunit", "0", "Changes the unit of speed displayed in timerpanel 0=default 1=kmh.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
 	g_Speedunit      = GetConVarBool(cvarSpeedunit);
