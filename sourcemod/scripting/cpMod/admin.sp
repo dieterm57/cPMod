@@ -42,7 +42,8 @@ public CpAdminPanelStartHandler(Handle:menu, MenuAction:action, param1, param2){
 			CpAdminPanel(param1);
 		}
 	}else if(action == MenuAction_End){
-		CloseHandle(CpSetterTimer);
+		if(CpSetterTimer != INVALID_HANDLE)
+			CloseHandle(CpSetterTimer);
 		CloseHandle(menu);
 	}
 }
@@ -62,7 +63,8 @@ public CpAdminPanelEndHandler(Handle:menu, MenuAction:action, param1, param2){
 			CpAdminPanel(param1);
 		}
 	}else if(action == MenuAction_End){
-		CloseHandle(CpSetterTimer);
+		if(CpSetterTimer != INVALID_HANDLE)
+			CloseHandle(CpSetterTimer);
 		CloseHandle(menu);
 	}
 }

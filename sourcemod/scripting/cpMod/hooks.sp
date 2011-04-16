@@ -17,8 +17,9 @@ public Action:Event_player_spawn(Handle:event, const String:name[], bool:dontBro
 	if(g_Timer)
 		MapTimer[client] = CreateTimer(1.0, ActionMapTimer, client, TIMER_REPEAT);
 	
+	//custom access??
 	new AdminId:aid = GetUserAdmin(client);
-	if(aid != INVALID_ADMIN_ID && GetAdminFlag(aid, Admin_Level)){
+	if(aid != INVALID_ADMIN_ID){
 		if(g_Tracer)
 			TraceTimer[client] = CreateTimer(1.0, ActionTraceTimer, client, TIMER_REPEAT);
 		

@@ -254,7 +254,7 @@ public ClearClient(client){
 		return;
 	
 	if(g_Enabled){
-		currentcp[client] = 0;
+		currentcp[client] = -1;
 		wholecp[client] = 0;
 		
 		/* superfluous
