@@ -33,6 +33,7 @@ Cmds:
 
 Cvars:
 sm_cp_enabled      - <1|0> Enable/Disable the plugin.
+sm_cp_adminlevel   - "Admin_Root" Sets the access level for admins.
 sm_cp_timer        - <1|0> Enable/Disable map based timer.
 sm_cp_restore      - <1|0> Enable/Disable automatic saving of checkpoints to database.
 sm_cp_noblock      - <1|0> Enable/Disable player blocking.
@@ -110,6 +111,8 @@ Versions
     - Increased stability & performance
 2.0.1
     - Enabled saving while timer running
+    - Fixed cp not being restored if it was the first
+    - Simplyfied admin flag setting
 */
 
 #include <sourcemod>
@@ -118,8 +121,6 @@ Versions
 //todo:
 //find a better solution than defining two variables!
 
-#define ADMIN_LEVEL ADMFLAG_ROOT
-#define Admin_Level Admin_Root
 #define CPLIMIT 10
 
 #define VERSION "2.0.1"
@@ -145,8 +146,11 @@ new Handle:db = INVALID_HANDLE;
 new Handle:cvarEnable = INVALID_HANDLE;
 new bool:g_Enabled = false;
 
-new Handle:cvarCpLimit = INVALID_HANDLE;
-new g_CpLimit = 0;
+new Handle:cvarAdminLevel = INVALID_HANDLE;
+new Admin_Level;
+
+//new Handle:cvarCpLimit = INVALID_HANDLE;
+//new g_CpLimit = 0;
 
 new Handle:h_GameConf;
 new Handle:h_Respawn;
@@ -243,11 +247,15 @@ public OnPluginStart(){
 	cvarEnable     = CreateConVar("sm_cp_enabled", "1", "Enable/Disable the plugin.", FCVAR_PLUGIN|FCVAR_NOTIFY, true, 0.0, true, 1.0);
 	g_Enabled      = GetConVarBool(cvarEnable);
 	HookConVarChange(cvarEnable, OnSettingChanged);
+
+	cvarAdminLevel = CreateConVar("sm_cp_adminlevel", "Admin_Root", "Sets the access level for admins.", FCVAR_PLUGIN);
+	Admin_Level = GetConVarInt(cvarAdminLevel);
 	
-	cvarCpLimit  = CreateConVar("sm_cp_cplimit", "10", "Sets the limit of checkpoints per player.", FCVAR_PLUGIN, true, 1.0, true, 255.0);
-	g_CpLimit = GetConVarInt(cvarCpLimit);
+	//todo: dynamic array resize to use a singel variable
+	//cvarCpLimit = CreateConVar("sm_cp_cplimit", "10", "Sets the limit of checkpoints per player.", FCVAR_PLUGIN, true, 1.0, true, 255.0);
+	//g_CpLimit   = GetConVarInt(cvarCpLimit);
 	
-	//playercords = new Float:[MAXPLAYERS+1][g_CpLimit][3];
+	//playercords  = new Float:[MAXPLAYERS+1][g_CpLimit][3];
 	//playerangles = new Float:[MAXPLAYERS+1][g_CpLimit][3];
 	
 	cvarCleanupGuns  = CreateConVar("sm_cp_cleanupguns", "1", "Enable/Disable automatic removal of weapons.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
@@ -336,12 +344,12 @@ public OnPluginStart(){
 	RegConsoleCmd("sm_stop", Client_Stop, "Toogles blocking");
 	RegConsoleCmd("sm_wr", Client_Wr, "Toogles blocking");
 	
-	RegAdminCmd("sm_cpadmin", Admin_CpPanel, ADMIN_LEVEL, "Displays the admin panel.");
-	RegAdminCmd("sm_purgeplayer", Admin_PurgePlayers, ADMIN_LEVEL, "Purges all old players.");
-	RegAdminCmd("sm_resetmaps", Admin_ResetMaps, ADMIN_LEVEL, "Resets all stored map start/end points.");
-	RegAdminCmd("sm_resetplayers", Admin_ResetPlayers, ADMIN_LEVEL, "Resets all players.");
-	RegAdminCmd("sm_resetcheckpoints", Admin_ResetCheckpoints, ADMIN_LEVEL, "Resets all checkpoints.");
-	RegAdminCmd("sm_resetrecords", Admin_ResetRecords, ADMIN_LEVEL, "Resets all records.");
+	RegAdminCmd("sm_cpadmin", Admin_CpPanel, Admin_Level, "Displays the admin panel.");
+	RegAdminCmd("sm_purgeplayer", Admin_PurgePlayers, Admin_Level, "Purges all old players.");
+	RegAdminCmd("sm_resetmaps", Admin_ResetMaps, Admin_Level, "Resets all stored map start/end points.");
+	RegAdminCmd("sm_resetplayers", Admin_ResetPlayers, Admin_Level, "Resets all players.");
+	RegAdminCmd("sm_resetcheckpoints", Admin_ResetCheckpoints, Admin_Level, "Resets all checkpoints.");
+	RegAdminCmd("sm_resetrecords", Admin_ResetRecords, Admin_Level, "Resets all records.");
 	
 	AutoExecConfig(true, "sm_cpmod");
 }
@@ -504,7 +512,8 @@ public OnClientPostAdminCheck(client){
 	if(g_Enabled && IsClientInGame(client) && !IsFakeClient(client)){
 		TraceTimer[client] = INVALID_HANDLE;
 		MapTimer[client] = INVALID_HANDLE;
-
+		currentcp[client] = -1;
+		
 		//if(g_Restore && !g_Timer)
 		db_selectPlayerCheckpoint(client);
 		
@@ -524,7 +533,7 @@ public OnClientDisconnect(client){
 		}
 		
 		new current = currentcp[client];
-		if(g_Restore && current > 0){
+		if(g_Restore && current != -1){
 			db_updatePlayerCheckpoint(client, current);
 		}
 	}

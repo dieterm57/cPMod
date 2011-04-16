@@ -419,7 +419,8 @@ public SQL_SelectCheckpointCallback(Handle:owner, Handle:hndl, const String:erro
 		SQL_FetchString(hndl, 0, cords, 32);
 		SQL_FetchString(hndl, 1, angles, 32);
 		
-		if(StrEqual(cords, "0:0:0") || StrEqual(cords, "0.000000:0.000000:0.000000") || StrEqual(angles, "0:0:0") || StrEqual(angles, "0.000000:0.000000:0.000000") ){
+		//if(StrEqual(cords, "0:0:0") || StrEqual(cords, "0.000000:0.000000:0.000000") || StrEqual(angles, "0:0:0") || StrEqual(angles, "0.000000:0.000000:0.000000")){
+		if(StrEqual(cords, "0:0:0") || StrEqual(angles, "0:0:0")){
 			currentcp[client] = 0;
 			wholecp[client] = 0;
 		} else{
