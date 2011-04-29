@@ -1,6 +1,37 @@
+/**
+ *
+ * =============================================================================
+ *
+ * =============================================================================
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, version 3.0, as published by the
+ * Free Software Foundation.
+ * 
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * As a special exception, AlliedModders LLC gives you permission to link the
+ * code of this program (as well as its derivative 1works) to "Half-Life 2," the
+ * "Source Engine," the "SourcePawn JIT," and any Game MODs that run on software
+ * by the Valve Corporation.  You must obey the GNU General Public License in
+ * all respects for all other code used.  Additionally, AlliedModders LLC grants
+ * this exception to all derivative works.  AlliedModders LLC defines further
+ * exceptions, found in LICENSE.txt,
+ * or <http://www.sourcemod.net/license.php>.
+ *
+ *
+ */
+
+
 /*
 [cP mod]
-- version 2.0.1
+- version 2.0.2
 
 This plugin allows users to save their location and teleport later.
 It further provides some features for non skilled bHopper like low gravity or a scout.
@@ -13,27 +44,28 @@ Admins can get a special sprite tracing them.
 http://www.game-monitor.com/search.php?search=cPMod_version&type=variable
 
 Cmds:
-!clear - Erase all checkpoints
+!clear - Erases all checkpoints
 !cp    - Opens teleportmenu
 !next  - Next checkpoint
 !prev  - Previous checkpoint
 !save  - Saves a checkpoint
 !tele  - Teleports you to last checkpoint
 
-!block      - Toogles blocking
 !help       - Displays the help menu
+!block      - Toogles blocking
+!scout      - Spawns a scout
 !lowgrav    - Sets player gravity to low
 !normalgrav - Sets player gravity to default
+
 !record     - Displays your record
 !restart    - Restarts your timer
-!scout      - Spawns a scout
 !stop       - Stops the timer
 !wr         - Displays the record on the current map
 
 
 Cvars:
 sm_cp_enabled      - <1|0> Enable/Disable the plugin.
-sm_cp_adminlevel   - "Admin_Root" Sets the access level for admins.
+sm_cp_adminlevel   - <"Admin_Root"> Sets the access level for admins.
 sm_cp_timer        - <1|0> Enable/Disable map based timer.
 sm_cp_restore      - <1|0> Enable/Disable automatic saving of checkpoints to database.
 sm_cp_noblock      - <1|0> Enable/Disable player blocking.
@@ -113,17 +145,28 @@ Versions
     - Enabled saving while timer running
     - Fixed cp not being restored if it was the first
     - Simplyfied admin flag setting
+2.0.2
+    - Fixed respawn error on some machines
+    - PrintToChat after !restart
+    - Commented whole source
+    - Added licensing
 */
 
 #include <sourcemod>
 #include <sdktools>
 
-//todo:
-//find a better solution than defining two variables!
+#undef REQUIRE_EXTENSIONS
+#include <cstrike>
+#define REQUIRE_EXTENSIONS
 
+//this variable defines how many checkpoints/player there will be
 #define CPLIMIT 10
 
-#define VERSION "2.0.1"
+//-----------------------------//
+// nothing to change over here //
+//-----------------------------//
+//...
+#define VERSION "2.0.2"
 
 #define YELLOW 0x01
 #define TEAMCOLOR 0x02
@@ -139,9 +182,11 @@ Versions
 #define MYSQL 0
 #define SQLITE 1
 
+//-------------------//
+// many variables :) //
+//-------------------//
 new g_dbtype;
 new Handle:db = INVALID_HANDLE;
-
 
 new Handle:cvarEnable = INVALID_HANDLE;
 new bool:g_Enabled = false;
@@ -152,8 +197,8 @@ new Admin_Level;
 //new Handle:cvarCpLimit = INVALID_HANDLE;
 //new g_CpLimit = 0;
 
-new Handle:h_GameConf;
-new Handle:h_Respawn;
+//new Handle:h_GameConf;
+//new Handle:h_Respawn;
 
 new Handle:cvarCleanupGuns = INVALID_HANDLE;
 new bool:g_CleanupGuns = false;
@@ -222,6 +267,9 @@ new String:recordSound[32];
 new BeamSpriteFollow,BeamSpriteRing1,BeamSpriteRing2;
 
 
+//----------//
+// includes //
+//----------//
 #include "cPMod/admin.sp"
 #include "cPMod/commands.sp"
 #include "cPMod/hooks.sp"
@@ -236,6 +284,9 @@ public Plugin:myinfo = {
 	url = "http://b-com.tk"
 }
 
+//----------------//
+// initialization //
+//----------------//
 public OnPluginStart(){
 	LoadTranslations("cpmod.phrases");
 	HookEvent("player_spawn", Event_player_spawn);
@@ -309,11 +360,11 @@ public OnPluginStart(){
 	HookConVarChange(cvarHealClient, OnSettingChanged);
 	if(cvarHealClient)
 		HookEvent("player_hurt", Event_player_hurt);
-		
+	
 	cvarHintSound = CreateConVar("sm_cp_hintsound", "0", "Enable/Disable playing sound on popup.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
 	g_HintSound   = GetConVarBool(cvarHintSound);
 	HookConVarChange(cvarHintSound, OnSettingChanged);
-		
+	
 	cvarRecordSound = CreateConVar("sm_cp_recourdsound", "quake/holyshit.mp3", "Sets the sound that is played on new record.", FCVAR_PLUGIN);
 	GetConVarString(cvarRecordSound, recordSound, 32);
 	
@@ -321,28 +372,33 @@ public OnPluginStart(){
 	g_Speedunit      = GetConVarBool(cvarSpeedunit);
 	HookConVarChange(cvarSpeedunit, OnSettingChanged);
 	
-	h_GameConf = LoadGameConfigFile("cPMod.gamedata");
-	StartPrepSDKCall(SDKCall_Player);
-	PrepSDKCall_SetFromConf(h_GameConf, SDKConf_Signature, "RoundRespawn");
-	h_Respawn = EndPrepSDKCall();
+	//h_GameConf = LoadGameConfigFile("cPMod.gamedata");
+	//StartPrepSDKCall(SDKCall_Player);
+	//PrepSDKCall_SetFromConf(h_GameConf, SDKConf_Signature, "RoundRespawn");
+	//h_Respawn = EndPrepSDKCall();
+	
+	// stops the plugin if any signature failed, otherwise it would
+	// probably crash the server
+	//if(h_Respawn == INVALID_HANDLE)
+		//SetFailState("[cPMod] Signature Failed. Please contact the author.")
 	
 	RegConsoleCmd("sm_block", Client_Block, "Toogles blocking");
-	RegConsoleCmd("sm_lowgrav", Client_Lowgrav, "Toogles blocking");
-	RegConsoleCmd("sm_normalgrav", Client_Normalgrav, "Toogles blocking");
-	RegConsoleCmd("sm_scout", Client_Scout, "Toogles blocking");
+	RegConsoleCmd("sm_lowgrav", Client_Lowgrav, "Sets player gravity to low");
+	RegConsoleCmd("sm_normalgrav", Client_Normalgrav, "Sets player gravity to default");
+	RegConsoleCmd("sm_scout", Client_Scout, "Spawns a scout");
 	
-	RegConsoleCmd("sm_next", Client_Next, "Toogles blocking");
-	RegConsoleCmd("sm_prev", Client_Prev, "Toogles blocking");
-	RegConsoleCmd("sm_save", Client_Save, "Toogles blocking");
-	RegConsoleCmd("sm_tele", Client_Tele, "Toogles blocking");
-	RegConsoleCmd("sm_cp", Client_Cp, "Toogles blocking");
-	RegConsoleCmd("sm_clear", Client_Clear, "Toogles blocking");
-	RegConsoleCmd("sm_help", Client_Help, "Toogles blocking");
+	RegConsoleCmd("sm_next", Client_Next, "Next checkpoint");
+	RegConsoleCmd("sm_prev", Client_Prev, "Previous checkpoint");
+	RegConsoleCmd("sm_save", Client_Save, "Saves a checkpoint");
+	RegConsoleCmd("sm_tele", Client_Tele, "Teleports you to last checkpoint");
+	RegConsoleCmd("sm_cp", Client_Cp, "Opens teleportmenu");
+	RegConsoleCmd("sm_clear", Client_Clear, "Erases all checkpoints");
+	RegConsoleCmd("sm_help", Client_Help, "Displays the help menu");
 	
-	RegConsoleCmd("sm_record", Client_Record, "Toogles blocking");
-	RegConsoleCmd("sm_restart", Client_Restart, "Toogles blocking");
-	RegConsoleCmd("sm_stop", Client_Stop, "Toogles blocking");
-	RegConsoleCmd("sm_wr", Client_Wr, "Toogles blocking");
+	RegConsoleCmd("sm_record", Client_Record, "Displays your record");
+	RegConsoleCmd("sm_restart", Client_Restart, "Restarts your timer");
+	RegConsoleCmd("sm_stop", Client_Stop, "Stops the timer");
+	RegConsoleCmd("sm_wr", Client_Wr, "Displays the record on the current map");
 	
 	RegAdminCmd("sm_cpadmin", Admin_CpPanel, Admin_Level, "Displays the admin panel.");
 	RegAdminCmd("sm_purgeplayer", Admin_PurgePlayers, Admin_Level, "Purges all old players.");
@@ -354,7 +410,11 @@ public OnPluginStart(){
 	AutoExecConfig(true, "sm_cpmod");
 }
 
+//--------------------------//
+// executed on start of map //
+//--------------------------//
 public OnMapStart(){
+	//precache some files
 	BeamSpriteFollow = PrecacheModel("materials/sprites/laserbeam.vmt");
 	BeamSpriteRing1 = PrecacheModel("materials/sprites/tp_beam001.vmt");
 	BeamSpriteRing2 = PrecacheModel("materials/sprites/crystal_beam1.vmt");
@@ -365,6 +425,7 @@ public OnMapStart(){
 	
 	GetCurrentMap(mapname, 32);
 	
+	//reset player slots
 	for(new i = 0; i <= MAXPLAYERS; i++){
 		currentcp[i] = 0;
 		wholecp[i] = 0;
@@ -373,38 +434,52 @@ public OnMapStart(){
 		runjumps[i] = 0;
 	}
 	
+	//if g_Timer active
 	if(g_Timer){
+		//query the timer start stop zones
 		db_selectMapStartStop();
 		
+		//select record depending on record type
 		if(g_RecordType == RECORD_TIME)
 			db_selectWorldRecordTime();
 		else
 			db_selectWorldRecordJump();
 	}
 	
+	//if g_CleanupGuns
 	if(g_CleanupGuns)
+		//create the cleanup timer
 		CleanTimer = CreateTimer(10.0, ActionCleanTimer, _, TIMER_REPEAT);
 }
 
+//------------------------//
+// executed on end of map //
+//------------------------//
 public OnMapEnd(){
+	//for all of the players
 	for(new i = 0; i <= MAXPLAYERS; i++){
+		//if a timer still active: close it!
 		if(g_Timer && MapTimer[i] != INVALID_HANDLE){
 			CloseHandle(MapTimer[i]);
 			MapTimer[i] = INVALID_HANDLE;
 		}
+		//if a tracer still active: close it!
 		if(g_Tracer && TraceTimer[i] != INVALID_HANDLE){
 			CloseHandle(TraceTimer[i]);
 			TraceTimer[i] = INVALID_HANDLE;
 		}
 	}
 	
+	//also close the cleanup timer
 	if(g_CleanupGuns && CleanTimer != INVALID_HANDLE){
 		CloseHandle(CleanTimer);
 		CleanTimer = INVALID_HANDLE;
 	}
 }
 
-
+//-----------------------------------//
+// hook executed on changed settings //
+//-----------------------------------//
 public OnSettingChanged(Handle:convar, const String:oldValue[], const String:newValue[]){
 	if(convar == cvarEnable){
 		if(newValue[0] == '1')
@@ -508,33 +583,48 @@ public OnSettingChanged(Handle:convar, const String:oldValue[], const String:new
 	}
 }
 
+//------------------------------------//
+// executed on client post admincheck //
+//------------------------------------//
 public OnClientPostAdminCheck(client){
+	//if g_Enabled and client valid
 	if(g_Enabled && IsClientInGame(client) && !IsFakeClient(client)){
+		//reset some settings
 		TraceTimer[client] = INVALID_HANDLE;
 		MapTimer[client] = INVALID_HANDLE;
 		currentcp[client] = -1;
 		
 		//if(g_Restore && !g_Timer)
+		
+		//select the last checkpoint
+		//(also creates a new entry in the database, if checkpoint not found)
 		db_selectPlayerCheckpoint(client);
 		
+		//display the help panel
 		HelpPanel(client);
 	}
 }
 
+//-------------------------------//
+// executed on player disconnect //
+//-------------------------------//
 public OnClientDisconnect(client){
 	if(g_Enabled){
-		if(g_Tracer && TraceTimer[client] != INVALID_HANDLE){
-				CloseHandle(TraceTimer[client]);
-				TraceTimer[client] = INVALID_HANDLE;
-		}
+		//cleanup the timer
 		if(g_Timer && MapTimer[client] != INVALID_HANDLE){
 				CloseHandle(MapTimer[client]);
 				MapTimer[client] = INVALID_HANDLE;
 		}
+		//cleanup the tracer
+		if(g_Tracer && TraceTimer[client] != INVALID_HANDLE){
+				CloseHandle(TraceTimer[client]);
+				TraceTimer[client] = INVALID_HANDLE;
+		}
 		
 		new current = currentcp[client];
-		if(g_Restore && current != -1){
+		//if g_Restore and valid checkpoint
+		if(g_Restore && current != -1)
+			//update the checkpoint in the database
 			db_updatePlayerCheckpoint(client, current);
-		}
 	}
 }
