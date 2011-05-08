@@ -31,41 +31,29 @@
 //-------------------//
 // many variables :) //
 //-------------------//
-new String:sqlite_createMap[] = "CREATE TABLE IF NOT EXISTS map (mapname VARCHAR(32) PRIMARY KEY, start0 VARCHAR(38) NOT NULL DEFAULT '0:0:0', start1 VARCHAR(38) NOT NULL DEFAULT '0:0:0', end0 VARCHAR(38) NOT NULL DEFAULT '0:0:0', end1 VARCHAR(38) NOT NULL DEFAULT '0:0:0');";
 new String:sql_createMap[] = "CREATE TABLE IF NOT EXISTS map (mapname VARCHAR(32) PRIMARY KEY, start0 VARCHAR(38) NOT NULL DEFAULT '0:0:0', start1 VARCHAR(38) NOT NULL DEFAULT '0:0:0', end0 VARCHAR(38) NOT NULL DEFAULT '0:0:0', end1 VARCHAR(38) NOT NULL DEFAULT '0:0:0');";
-new String:sqlite_createPlayer[] = "CREATE TABLE IF NOT EXISTS player (steamid VARCHAR(32), mapname VARCHAR(32), name VARCHAR(32), cords VARCHAR(38) NOT NULL DEFAULT '0:0:0', angle VARCHAR(38) NOT NULL DEFAULT '0:0:0', jumps INT(12) NOT NULL DEFAULT '-1', runtime INT(12) NOT NULL DEFAULT '-1', date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(steamid,mapname));";
-new String:sql_createPlayer[] = "CREATE TABLE IF NOT EXISTS player (steamid VARCHAR(32), mapname VARCHAR(32), name VARCHAR(32), cords VARCHAR(38) NOT NULL DEFAULT '0:0:0', angle VARCHAR(38) NOT NULL DEFAULT '0:0:0', jumps INT(12) NOT NULL DEFAULT '-1', runtime INT(12) NOT NULL DEFAULT '-1', date TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY(steamid,mapname);";
+new String:sql_createPlayer[] = "CREATE TABLE IF NOT EXISTS player (steamid VARCHAR(32), mapname VARCHAR(32), name VARCHAR(32), cords VARCHAR(38) NOT NULL DEFAULT '0:0:0', angle VARCHAR(38) NOT NULL DEFAULT '0:0:0', jumps INT(12) NOT NULL DEFAULT '-1', runtime INT(12) NOT NULL DEFAULT '-1', date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(steamid,mapname));";
 
-new String:sqlite_insertMap[] = "INSERT INTO map (mapname) VALUES('%s');";
 new String:sql_insertMap[] = "INSERT INTO map (mapname) VALUES('%s');";
-new String:sqlite_insertPlayer[] = "INSERT INTO player (steamid, mapname, name) VALUES('%s', '%s', '%s');";
 new String:sql_insertPlayer[] = "INSERT INTO player (steamid, mapname, name) VALUES('%s', '%s', '%s');";
 
-new String:sqlite_updateMapStart[] = "UPDATE map SET start0 = '%s', start1 = '%s' WHERE mapname = '%s';";
 new String:sql_updateMapStart[] = "UPDATE map SET start0 = '%s', start1 = '%s' WHERE mapname = '%s';";
-new String:sqlite_updateMapEnd[] = "UPDATE map SET end0 = '%s', end1 = '%s' WHERE mapname = '%s';";
 new String:sql_updateMapEnd[] = "UPDATE map SET end0 = '%s', end1 = '%s' WHERE mapname = '%s';";
 
-new String:sqlite_updatePlayerCheckpoint[] = "UPDATE player SET name = '%s', cords = '%s', angle = '%s', date = datetime('now') WHERE steamid = '%s' AND mapname = '%s';";
 new String:sql_updatePlayerCheckpoint[] = "UPDATE player SET name = '%s', cords = '%s', angle = '%s', date = CURRENT_TIMESTAMP WHERE steamid = '%s' AND mapname = '%s';";
-new String:sqlite_updatePlayerRecord[] = "UPDATE player SET name = '%s', jumps = '%i', runtime = '%i', date = datetime('now') WHERE steamid = '%s' AND mapname = '%s';";
 new String:sql_updatePlayerRecord[] = "UPDATE player SET name = '%s', jumps = '%i', runtime = '%i', date = CURRENT_TIMESTAMP WHERE steamid = '%s' AND mapname = '%s';";
 
-new String:sqlite_selectMapStartStop[] = "SELECT start0, start1, end0, end1 FROM map WHERE mapname = '%s'";
 new String:sql_selectMapStartStop[] = "SELECT start0, start1, end0, end1 FROM map WHERE mapname = '%s'";
-new String:sqlite_selectCheckpoint[] = "SELECT cords, angle FROM player WHERE steamid = '%s' AND mapname = '%s';";
 new String:sql_selectCheckpoint[] = "SELECT cords, angle FROM player WHERE steamid = '%s' AND mapname = '%s';";
-new String:sqlite_selectWorldRecordTime[] = "SELECT jumps, runtime FROM player WHERE mapname = '%s' AND jumps NOT LIKE '-1' AND runtime NOT LIKE '-1' ORDER BY runtime ASC LIMIT 1;";
 new String:sql_selectWorldRecordTime[] = "SELECT jumps, runtime FROM player WHERE mapname = '%s' AND jumps NOT LIKE '-1' AND runtime NOT LIKE '-1' ORDER BY runtime ASC LIMIT 1;";
-new String:sqlite_selectWorldRecordJump[] = "SELECT jumps, runtime FROM player WHERE mapname = '%s' AND jumps NOT LIKE '-1' AND runtime NOT LIKE '-1' ORDER BY jumps ASC LIMIT 1;";
 new String:sql_selectWorldRecordJump[] = "SELECT jumps, runtime FROM player WHERE mapname = '%s' AND jumps NOT LIKE '-1' AND runtime NOT LIKE '-1' ORDER BY jumps ASC LIMIT 1;";
 
-new String:sqlite_selectRecord[] = "SELECT name, jumps, runtime, date FROM player WHERE steamid = '%s' AND mapname = '%s';";
-new String:sql_selectRecord[] = "SELECT name, jumps, runtime, date FROM player WHERE steamid = '%s' AND mapname = '%s';";
+new String:sql_selectPlayerRecord[] = "SELECT name, jumps, runtime, date FROM player WHERE steamid = '%s' AND mapname = '%s' AND jumps NOT LIKE '-1' AND runtime NOT LIKE '-1';";
+new String:sql_selectPlayerCount[] = "SELECT name FROM player WHERE mapname = '%s' AND jumps NOT LIKE '-1' AND runtime NOT LIKE '-1';";
+new String:sql_selectPlayerRankTime[] = "SELECT name FROM player WHERE runtime <= (SELECT runtime FROM player WHERE steamid = '%s' AND mapname = '%s' AND runtime NOT LIKE '-1') AND mapname = '%s' AND runtime NOT LIKE '-1' ORDER BY runtime;";
+new String:sql_selectPlayerRankJump[] = "SELECT name FROM player WHERE jumps <= (SELECT jumps FROM player WHERE steamid = '%s' AND mapname = '%s' AND jumps NOT LIKE '-1') AND mapname = '%s' AND jumps NOT LIKE '-1' ORDER BY jumps;";
 
-new String:sqlite_selectTopRecordTime[] = "SELECT name, runtime FROM player WHERE mapname = '%s' AND runtime NOT LIKE '-1' ORDER BY runtime ASC LIMIT 10;";
 new String:sql_selectTimeWorldRecord[] = "SELECT name, runtime FROM player WHERE mapname = '%s' AND runtime NOT LIKE '-1' ORDER BY runtime ASC LIMIT 10;";
-new String:sqlite_selectJumpWorldRecord[] = "SELECT name, jumps FROM player WHERE mapname = '%s' AND jumps NOT LIKE '-1' ORDER BY jumps ASC LIMIT 10;";
 new String:sql_selectJumpWorldRecord[] = "SELECT name, jumps FROM player WHERE mapname = '%s' AND jumps NOT LIKE '-1' ORDER BY jumps ASC LIMIT 10;";
 
 new String:sqlite_purgePlayers[] = "DELETE FROM players WHERE date < datetime('now', '-%i days');";
@@ -75,9 +63,8 @@ new String:sqlite_resetMap[] = "DROP TABLE map; VACCUM";
 new String:sql_resetMap[] = "DROP TABLE map;";
 new String:sqlite_resetPlayer[] = "DROP TABLE player; VACCUM";
 new String:sql_resetPlayer[] = "DROP TABLE player;";
-new String:sqlite_resetPlayerCheckpoint[] = "UPDATE player SET cords = '0:0:0', angle = '0:0:0';";
+
 new String:sql_resetPlayerCheckpoint[] = "UPDATE player SET cords = '0:0:0', angle = '0:0:0';";
-new String:sqlite_resetPlayerRecord[] = "UPDATE player SET jumps = '-1', runtime = '-1';";
 new String:sql_resetPlayerRecord[] = "UPDATE player SET jumps = '-1', runtime = '-1';";
 
 
@@ -99,9 +86,9 @@ public db_setupDatabase(){
 	//select the driver depending on the settings (mysql/sqlite)
 	if(strcmp(ident, "mysql", false) == 0){
 		g_dbtype = MYSQL;
-	} else if(strcmp(ident, "sqlite", false) == 0){
+	}else if(strcmp(ident, "sqlite", false) == 0){
 		g_dbtype = SQLITE;
-	} else {
+	}else{
 		LogError("[cP Mod] Invalid Database-Type");
 		return;
 	}
@@ -116,14 +103,8 @@ public db_setupDatabase(){
 public db_createTables(){
 	SQL_LockDatabase(db);
 	
-	//execute queries depending on driver
-	if(g_dbtype == MYSQL){
-		SQL_FastQuery(db, sql_createMap);
-		SQL_FastQuery(db, sql_createPlayer);
-	} else{
-		SQL_FastQuery(db, sqlite_createMap);
-		SQL_FastQuery(db, sqlite_createPlayer);
-	}
+	SQL_FastQuery(db, sql_createMap);
+	SQL_FastQuery(db, sql_createPlayer);
 	
 	SQL_UnlockDatabase(db);
 }
@@ -134,10 +115,7 @@ public db_createTables(){
 public db_insertMap(){
 	decl String:query[255];
 	
-	if(g_dbtype == MYSQL)
-		Format(query, 255, sql_insertMap, mapname);
-	else
-		Format(query, 255, sqlite_insertMap, mapname);
+	Format(query, 255, sql_insertMap, mapname);
 		
 	SQL_TQuery(db, SQL_CheckCallback, query);
 }
@@ -157,11 +135,8 @@ public db_insertPlayer(client){
 	//escape some quote characters that could mess up the query
 	SQL_QuoteString(db, uname, name, MAX_NAME_LENGTH*2+1);
 	
-	if(g_dbtype == MYSQL)
-		Format(query, 255, sql_insertPlayer, steamid, mapname, name);
-	else
-		Format(query, 255, sqlite_insertPlayer, steamid, mapname, name);
-		
+	Format(query, 255, sql_insertPlayer, steamid, mapname, name);
+	
 	SQL_TQuery(db, SQL_CheckCallback, query);
 }
 
@@ -173,19 +148,11 @@ public db_updateMapStartStop(client, String:bcords[], String:ecords[], pos){
 	
 	//depending on the pos variable
 	if(pos == POS_START){
-		//depending on the driver
-		if(g_dbtype == MYSQL)
-			Format(query, 255, sql_updateMapStart, bcords, ecords, mapname);
-		else
-			Format(query, 255, sqlite_updateMapStart, bcords, ecords, mapname);
+		Format(query, 255, sql_updateMapStart, bcords, ecords, mapname);
 		
 		PrintToChat(client, "%t", "StartSet", YELLOW,LIGHTGREEN,YELLOW);
 	}else{
-		//depending on the driver
-		if(g_dbtype == MYSQL)
-			Format(query, 255, sql_updateMapEnd, bcords, ecords, mapname);
-		else
-			Format(query, 255, sqlite_updateMapEnd, bcords, ecords, mapname);
+		Format(query, 255, sql_updateMapEnd, bcords, ecords, mapname);
 		
 		PrintToChat(client, "%t", "EndSet", YELLOW,LIGHTGREEN,YELLOW);
 	}
@@ -207,10 +174,7 @@ public db_updatePlayerCheckpoint(client, current){
 	//escape some quote characters that could mess up the query
 	SQL_QuoteString(db, uname, name, MAX_NAME_LENGTH*2+1);
 	
-	if(g_dbtype == MYSQL)
-		Format(query, 255, sql_insertPlayer, steamid, mapname, name);
-	else
-		Format(query, 255, sqlite_insertPlayer, steamid, mapname, name);
+	Format(query, 255, sql_insertPlayer, steamid, mapname, name);
 	
 	//write the coordinates in a string buffer
 	decl String:cords[38];
@@ -218,10 +182,7 @@ public db_updatePlayerCheckpoint(client, current){
 	decl String:angles[255];
 	Format(angles, 38, "%f:%f:%f",playerangles[client][current][0],playerangles[client][current][1],playerangles[client][current][2]);
 	
-	if(g_dbtype == MYSQL)
-		Format(query, 255, sql_updatePlayerCheckpoint, name, cords, angles, steamid, mapname);
-	else
-		Format(query, 255, sqlite_updatePlayerCheckpoint, name, cords, angles, steamid, mapname);
+	Format(query, 255, sql_updatePlayerCheckpoint, name, cords, angles, steamid, mapname);
 	
 	SQL_TQuery(db, SQL_CheckCallback, query);
 }
@@ -241,33 +202,27 @@ public db_updatePlayerRecord(client){
 	//escape some quote characters that could mess up the query
 	SQL_QuoteString(db, uname, name, MAX_NAME_LENGTH*2+1);
 	
-	if(g_dbtype == MYSQL)
-		Format(query, 255, sql_updatePlayerRecord, name, runjumps[client], runtime[client], steamid, mapname);
-	else
-		Format(query, 255, sqlite_updatePlayerRecord, name, runjumps[client], runtime[client], steamid, mapname);
+	Format(query, 255, sql_updatePlayerRecord, name, runjumps[client], runtime[client], steamid, mapname);
 	
 	SQL_TQuery(db, SQL_CheckCallback, query);
 }
 
-//----------------------//
-// select record method //
-//----------------------//
-public db_selectRecord(client){
+//---------------------------//
+// view player record method //
+//---------------------------//
+public db_viewPlayerRecord(client){
 	decl String:query[255];
 	decl String:steamid[32];
 	GetClientAuthString(client, steamid, 32);
 	
-	if(g_dbtype == MYSQL)
-		Format(query, 255, sql_selectRecord, steamid, mapname);
-	else
-		Format(query, 255, sqlite_selectRecord, steamid, mapname);
+	Format(query, 255, sql_selectPlayerRecord, steamid, mapname);
 	
-	SQL_TQuery(db, SQL_SelectRecordCallback, query, client);
+	SQL_TQuery(db, SQL_ViewPlayerRecordCallback, query, client);
 }
 //----------//
 // callback //
 //----------//
-public SQL_SelectRecordCallback(Handle:owner, Handle:hndl, const String:error[], any:data){
+public SQL_ViewPlayerRecordCallback(Handle:owner, Handle:hndl, const String:error[], any:data){
 	if(hndl == INVALID_HANDLE)
 		LogError("[cP Mod] Error loading record (%s)", error);
 	
@@ -285,6 +240,12 @@ public SQL_SelectRecordCallback(Handle:owner, Handle:hndl, const String:error[],
 		jumps = SQL_FetchInt(hndl, 1);
 		time = SQL_FetchInt(hndl, 2);
 		SQL_FetchString(hndl, 3, date, 20);
+		
+		//call a method to display the rank text
+		if(g_RecordType == RECORD_TIME)
+			db_viewPlayerRank(client, time);
+		else
+			db_viewPlayerRank(client, jumps);
 		
 		//display a panel
 		new String:vrname[MAX_NAME_LENGTH];
@@ -312,22 +273,128 @@ public SQL_SelectRecordCallback(Handle:owner, Handle:hndl, const String:error[],
 		DrawPanelItem(panel, "exit");
 		SendPanelToClient(panel, client, RecordPanelHandler, 10);
 		CloseHandle(panel);
-	} else if(IsClientInGame(client)) //no valid player, so insert one
-		db_insertPlayer(client);
+	}
 }
 public RecordPanelHandler(Handle:menu, MenuAction:action, param1, param2){
 }
 
+//-------------------------//
+// view player rank method //
+//-------------------------//
+public db_viewPlayerRank(client, record){
+	decl String:query[255];
+	decl String:steamid[32];
+	GetClientAuthString(client, steamid, 32);
+	
+	if(g_RecordType == RECORD_TIME)
+		Format(query, 255, sql_selectPlayerRankTime, steamid, mapname, mapname);
+	else
+		Format(query, 255, sql_selectPlayerRankJump, steamid, mapname, mapname);
+	
+	SQL_TQuery(db, SQL_ViewPlayerRankCallback, query, client);
+}
+//----------//
+// callback //
+//----------//
+public SQL_ViewPlayerRankCallback(Handle:owner, Handle:hndl, const String:error[], any:data){
+	if(hndl == INVALID_HANDLE)
+		LogError("[cP Mod] Error viewing record (%s)", error);
+	
+	new rank = SQL_GetRowCount(hndl);
+	
+	new Handle:pack = CreateDataPack();
+	WritePackCell(pack, data);
+	WritePackCell(pack, rank);
+	
+	db_viewPlayerRank2(pack);
+}
+
+//--------------------------//
+// view player rank2 method //
+//--------------------------//
+public db_viewPlayerRank2(any:pack){
+	decl String:query[255];
+	
+	Format(query, 255, sql_selectPlayerCount, mapname);
+	
+	SQL_TQuery(db, SQL_ViewPlayerRankCallback2, query, pack);
+}
+//----------//
+// callback //
+//----------//
+public SQL_ViewPlayerRankCallback2(Handle:owner, Handle:hndl, const String:error[], any:data){
+	if(hndl == INVALID_HANDLE)
+		LogError("[cP Mod] Error viewing record2 (%s)", error);
+	
+	new count = SQL_GetRowCount(hndl);
+	
+	new Handle:pack = data;
+	ResetPack(pack);
+	new client = ReadPackCell(pack);
+	new rank = ReadPackCell(pack);
+	CloseHandle(pack);
+	
+	decl String:name[MAX_NAME_LENGTH];
+	GetClientName(client, name, MAX_NAME_LENGTH);
+	
+	if(g_ChatVisible)
+		PrintToChatAll("%t", "PlayerRank", YELLOW,LIGHTGREEN,YELLOW,GREEN,name,YELLOW,GREEN,rank,count,YELLOW);
+	else
+		PrintToChat(client, "%t", "PlayerRank", YELLOW,LIGHTGREEN,YELLOW,GREEN,name,YELLOW,GREEN,rank,count,YELLOW);
+}
+
+//-----------------------------//
+// select player record method //
+//-----------------------------//
+public db_updateRecord(client){
+	decl String:query[255];
+	decl String:steamid[32];
+	GetClientAuthString(client, steamid, 32);
+	
+	Format(query, 255, sql_selectPlayerRecord, steamid, mapname);
+	
+	SQL_TQuery(db, SQL_UpdateRecordCallback, query, client);
+}
+//----------//
+// callback //
+//----------//
+public SQL_UpdateRecordCallback(Handle:owner, Handle:hndl, const String:error[], any:data){
+	if(hndl == INVALID_HANDLE)
+		LogError("[cP Mod] Error loading record (%s)", error);
+	
+	new client = data;
+	//if there is a player record
+	if(SQL_HasResultSet(hndl) && SQL_FetchRow(hndl)){
+		
+		//if recordtime is type of time
+		if(g_RecordType == RECORD_TIME){
+			new time;
+			time = SQL_FetchInt(hndl, 2);
+			
+			//if the new record beats the old one
+			if(runtime[client] <= time)
+				db_updatePlayerRecord(client);
+		}else{ //type of jump
+			new jumps;
+			jumps = SQL_FetchInt(hndl, 1);
+			
+			//if the new record beats the old one
+			if(runjumps[client] <= jumps)
+				db_updatePlayerRecord(client);
+		}
+	//no record found, update!
+	}else
+		db_updatePlayerRecord(client);
+}
+
+
 //---------------------------------//
 // select time world record method //
 //---------------------------------//
-public db_SelectTimeWorldRecord(client){
+public db_selectTimeWorldRecord(client){
 	decl String:query[255];
 	
-	if(g_dbtype == MYSQL)
-		Format(query, 255, sql_selectTimeWorldRecord, mapname);
-	else
-		Format(query, 255, sqlite_selectTopRecordTime, mapname);
+	Format(query, 255, sql_selectTimeWorldRecord, mapname);
 	
 	SQL_TQuery(db, SQL_SelectTimeWorldRecordCallback, query, client);
 }
@@ -366,27 +433,23 @@ public SQL_SelectTimeWorldRecordCallback(Handle:owner, Handle:hndl, const String
 			DrawPanelText(panel, "No record found...");
 	}
 	
-	
 	DrawPanelItem(panel, "exit");
 	SendPanelToClient(panel, client, TimeWorldRecordPanelHandler, 10);
 	CloseHandle(panel);
 }
-//----------//
-// callback //
-//----------//
+//---------//
+// handler //
+//---------//
 public TimeWorldRecordPanelHandler(Handle:menu, MenuAction:action, param1, param2){
 }
 
 //---------------------------------//
 // select jump world record method //
 //---------------------------------//
-public db_SelectJumpWorldRecord(client){
+public db_selectJumpWorldRecord(client){
 	decl String:query[255];
 	
-	if(g_dbtype == MYSQL)
-		Format(query, 255, sql_selectJumpWorldRecord, mapname);
-	else
-		Format(query, 255, sqlite_selectJumpWorldRecord, mapname);
+	Format(query, 255, sql_selectJumpWorldRecord, mapname);
 	
 	SQL_TQuery(db, SQL_SelectJumpWorldRecordCallback, query, client);
 }
@@ -423,14 +486,13 @@ public SQL_SelectJumpWorldRecordCallback(Handle:owner, Handle:hndl, const String
 			DrawPanelText(panel, "No record found...");
 	} 
 	
-	
 	DrawPanelItem(panel, "exit");
 	SendPanelToClient(panel, client, JumpWorldRecordPanelHandler, 10);
 	CloseHandle(panel);
 }
-//----------//
-// callback //
-//----------//
+//---------//
+// handler //
+//---------//
 public JumpWorldRecordPanelHandler(Handle:menu, MenuAction:action, param1, param2){
 }
 
@@ -440,10 +502,7 @@ public JumpWorldRecordPanelHandler(Handle:menu, MenuAction:action, param1, param
 public db_selectMapStartStop(){
 	decl String:query[255];
 	
-	if(g_dbtype == MYSQL)
-		Format(query, 255, sql_selectMapStartStop, mapname);
-	else
-		Format(query, 255, sqlite_selectMapStartStop, mapname);
+	Format(query, 255, sql_selectMapStartStop, mapname);
 	
 	SQL_TQuery(db, SQL_SelectMapStartStopCallback, query);
 }
@@ -494,7 +553,7 @@ public SQL_SelectMapStartStopCallback(Handle:owner, Handle:hndl, const String:er
 			maptimer_end1_cords[2] = StringToFloat(cbuff[2]);
 			g_CordsSet = true;
 		}
-	} else //no map start stop area, so insert the map
+	}else //no map start stop area, so insert the map
 		db_insertMap();
 }
 
@@ -506,10 +565,7 @@ public db_selectPlayerCheckpoint(client){
 	decl String:steamid[32];
 	GetClientAuthString(client, steamid, 32);
 	
-	if(g_dbtype == MYSQL)
-		Format(query, 255, sql_selectCheckpoint, steamid, mapname);
-	else
-		Format(query, 255, sqlite_selectCheckpoint, steamid, mapname);
+	Format(query, 255, sql_selectCheckpoint, steamid, mapname);
 	
 	SQL_TQuery(db, SQL_SelectCheckpointCallback, query, client);
 }
@@ -531,11 +587,12 @@ public SQL_SelectCheckpointCallback(Handle:owner, Handle:hndl, const String:erro
 		SQL_FetchString(hndl, 1, angles, 32);
 		
 		//if(StrEqual(cords, "0:0:0") || StrEqual(cords, "0.000000:0.000000:0.000000") || StrEqual(angles, "0:0:0") || StrEqual(angles, "0.000000:0.000000:0.000000")){
+		
 		//if checkpoint not valid
 		if(StrEqual(cords, "0:0:0") || StrEqual(angles, "0:0:0")){
 			currentcp[client] = 0;
 			wholecp[client] = 0;
-		} else{ //valid
+		}else{ //valid
 			//parse the result into string buffers
 			decl String:cbuff[3][255]
 			ExplodeString(cords, ":", cbuff, 3, 32);
@@ -554,7 +611,7 @@ public SQL_SelectCheckpointCallback(Handle:owner, Handle:hndl, const String:erro
 			
 			PrintToChat(client, "%t", "CheckpointRestored", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
 		}
-	} else if(IsClientInGame(client)) //no checkpoint, so insert the player
+	}else if(IsClientInGame(client)) //no checkpoint, so insert the player
 		db_insertPlayer(client);
 }
 
@@ -564,10 +621,7 @@ public SQL_SelectCheckpointCallback(Handle:owner, Handle:hndl, const String:erro
 public db_selectWorldRecordTime(){
 	decl String:query[255];
 	
-	if(g_dbtype == MYSQL)
-		Format(query, 255, sql_selectWorldRecordTime, mapname);
-	else
-		Format(query, 255, sqlite_selectWorldRecordTime,mapname);
+	Format(query, 255, sql_selectWorldRecordTime, mapname);
 	
 	SQL_TQuery(db, SQL_SelectWRTimeCallback, query);
 }
@@ -593,10 +647,7 @@ public SQL_SelectWRTimeCallback(Handle:owner, Handle:hndl, const String:error[],
 public db_selectWorldRecordJump(){
 	decl String:query[255];
 	
-	if(g_dbtype == MYSQL)
-		Format(query, 255, sql_selectWorldRecordJump, mapname);
-	else
-		Format(query, 255, sqlite_selectWorldRecordJump,mapname);
+	Format(query, 255, sql_selectWorldRecordJump, mapname);
 	
 	SQL_TQuery(db, SQL_SelectWRJumpCallback, query);
 }
@@ -675,10 +726,7 @@ public db_resetPlayer(client){
 public db_resetCheckpoint(client){
 	SQL_LockDatabase(db);
 	
-	if(g_dbtype == MYSQL)
-		SQL_FastQuery(db, sql_resetPlayerCheckpoint);
-	else
-		SQL_FastQuery(db, sqlite_resetPlayerCheckpoint);
+	SQL_FastQuery(db, sql_resetPlayerCheckpoint);
 	
 	SQL_UnlockDatabase(db);
   
@@ -691,10 +739,7 @@ public db_resetCheckpoint(client){
 public db_resetRecord(client){
 	SQL_LockDatabase(db);
 	
-	if(g_dbtype == MYSQL)
-		SQL_FastQuery(db, sql_resetPlayerRecord);
-	else
-		SQL_FastQuery(db, sqlite_resetPlayerRecord);
+	SQL_FastQuery(db, sql_resetPlayerRecord);
 	
 	SQL_UnlockDatabase(db);
 	

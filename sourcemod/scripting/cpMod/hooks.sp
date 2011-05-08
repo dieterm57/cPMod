@@ -271,8 +271,16 @@ public Action:ActionMapTimer(Handle:timer, any:client){
 							decl String:name[MAX_NAME_LENGTH];
 							GetClientName(client, name, MAX_NAME_LENGTH);
 							
-							PrintToChatAll("%t", "TimerRecord", YELLOW,LIGHTGREEN,YELLOW,GREEN,name,YELLOW,LIGHTGREEN,time,YELLOW);
-							EmitSoundToAll(recordSound,client);
+							if(g_ChatVisible){
+								PrintToChatAll("%t", "TimerRecord", YELLOW,LIGHTGREEN,YELLOW,GREEN,name,YELLOW,LIGHTGREEN,time,YELLOW);
+								EmitSoundToAll(recordSound, client);
+							}else{
+								PrintToChat(client, "%t", "TimerRecord", YELLOW,LIGHTGREEN,YELLOW,GREEN,name,YELLOW,LIGHTGREEN,time,YELLOW);
+								EmitSoundToClient(client, recordSound, client);
+							}
+							
+							//update the temporary variables
+							recordtime = runtime[client];							
 						}else //no new record
 							PrintToChat(client, "%t", "TimerFinished", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW,GREEN,YELLOW);
 					}else{
@@ -281,16 +289,22 @@ public Action:ActionMapTimer(Handle:timer, any:client){
 							decl String:name[MAX_NAME_LENGTH];
 							GetClientName(client, name, MAX_NAME_LENGTH);
 							
-							PrintToChatAll("%t", "TimerRecord", YELLOW,LIGHTGREEN,YELLOW,GREEN,name,YELLOW,LIGHTGREEN,jumps,YELLOW);
-							EmitSoundToAll(recordSound,client);
+							if(g_ChatVisible){
+								PrintToChatAll("%t", "TimerRecord", YELLOW,LIGHTGREEN,YELLOW,GREEN,name,YELLOW,LIGHTGREEN,jumps,YELLOW);
+								EmitSoundToAll(recordSound, client);
+							}else{
+								PrintToChat(client, "%t", "TimerRecord", YELLOW,LIGHTGREEN,YELLOW,GREEN,name,YELLOW,LIGHTGREEN,jumps,YELLOW);
+								EmitSoundToClient(client, recordSound, client);
+							}
+							
+							//update the temporary variables
+							recordjumps = jumps[client];
 						}else //no new record
 							PrintToChat(client, "%t", "TimerFinished", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW,GREEN,YELLOW);
 					}
 					
-					//todo: check if player got better.
-					//now it always overwrites the old result even if it was better!!
 					//update the player record in the database
-					db_updatePlayerRecord(client);
+					db_updateRecord(client);
 					
 					//clean up
 					MapTimer[client] = INVALID_HANDLE;

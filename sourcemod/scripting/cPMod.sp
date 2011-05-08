@@ -31,7 +31,7 @@
 
 /*
 [cP mod]
-- version 2.0.2
+- version 2.0.3
 
 This plugin allows users to save their location and teleport later.
 It further provides some features for non skilled bHopper like low gravity or a scout.
@@ -76,6 +76,7 @@ sm_cp_scoutlimit   - <0|10> Sets the scout limit for each player.
 sm_cp_gravity      - <1|0> Enable/Disable player gravity.
 sm_cp_healclient   - <1|0> Enable/Disable healing of falldamage.
 sm_cp_hintsound    - <1|0> Enable/Disable playing sound on popup.
+sm_cp_chatvisible  - <1|0> Sets chat output visible to all or not.
 sm_cp_recordsound  - <"quake/holyshit.wav"> Sets the sound that is played on new record.
 sm_cp_speedunit    - <1|0> Changes the unit of speed displayed in timerpanel [0=default] [1=kmh].
 
@@ -150,6 +151,11 @@ Versions
     - PrintToChat after !restart
     - Commented whole source
     - Added licensing
+2.0.3
+    - Added ranking output
+    - Added chat visibility variable
+    - Fixed records being overwritten
+    - Cleaned up unnecessary database queries
 */
 
 #include <sourcemod>
@@ -166,7 +172,7 @@ Versions
 // nothing to change over here //
 //-----------------------------//
 //...
-#define VERSION "2.0.2"
+#define VERSION "2.0.3"
 
 #define YELLOW 0x01
 #define TEAMCOLOR 0x02
@@ -234,6 +240,8 @@ new bool:g_HintSound = false;
 new Handle:cvarRecordSound = INVALID_HANDLE;
 new bool:g_Speedunit = false;
 new Handle:cvarSpeedunit = INVALID_HANDLE;
+new bool:g_ChatVisible = false;
+new Handle:cvarChatVisible = INVALID_HANDLE;
 
 new Handle:TraceTimer[MAXPLAYERS+1];
 new Handle:MapTimer[MAXPLAYERS+1];
@@ -365,6 +373,10 @@ public OnPluginStart(){
 	g_HintSound   = GetConVarBool(cvarHintSound);
 	HookConVarChange(cvarHintSound, OnSettingChanged);
 	
+	cvarChatVisible = CreateConVar("sm_cp_chatvisible", "1", "Sets chat output visible to all or not.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	g_ChatVisible   = GetConVarBool(cvarChatVisible);
+	HookConVarChange(cvarChatVisible, OnSettingChanged);
+	
 	cvarRecordSound = CreateConVar("sm_cp_recourdsound", "quake/holyshit.mp3", "Sets the sound that is played on new record.", FCVAR_PLUGIN);
 	GetConVarString(cvarRecordSound, recordSound, 32);
 	
@@ -486,7 +498,7 @@ public OnSettingChanged(Handle:convar, const String:oldValue[], const String:new
 			g_Enabled = true;
 		else
 			g_Enabled = false;
-	} else if(convar == cvarTimer){
+	}else if(convar == cvarTimer){
 		
 		if(newValue[0] == '1'){
 			g_Timer = true;
@@ -498,7 +510,7 @@ public OnSettingChanged(Handle:convar, const String:oldValue[], const String:new
 				runtime[i] = 0;
 				runjumps[i] = 0;
 			}
-		} else{
+		}else{
 			g_Timer = false;
 			for(new i = 0; i <= MAXPLAYERS; i++){
 				if(MapTimer[i] != INVALID_HANDLE){
@@ -508,39 +520,39 @@ public OnSettingChanged(Handle:convar, const String:oldValue[], const String:new
 			}
 		}
 		
-	} else if(convar == cvarRecordType){
+	}else if(convar == cvarRecordType){
 		g_RecordType = newValue[0];
-	} else if(convar == cvarCleanupGuns){
+	}else if(convar == cvarCleanupGuns){
 		if(newValue[0] == '1'){
 			g_CleanupGuns = true;
 			//seems to be obsolent
 			//CleanTimer = CreateTimer(10.0, ActionCleanTimer, _, TIMER_REPEAT);
-		} else{
+		}else{
 			g_CleanupGuns = false;
 			CloseHandle(CleanTimer);
 			CleanTimer = INVALID_HANDLE;
 		}
-	} else if(convar == cvarRestore){
+	}else if(convar == cvarRestore){
 		if(newValue[0] == '1')
 			g_Restore = true;
 		else
 			g_Restore = false;
-	} else if(convar == cvarNoblock){
+	}else if(convar == cvarNoblock){
 		if(newValue[0] == '1')
 			g_Noblock = true;
 		else
 			g_Noblock = false;
-	} else if(convar == cvarPlayerBlock){
+	}else if(convar == cvarPlayerBlock){
 		if(newValue[0] == '1')
 			g_PlayerBlock = true;
 		else
 			g_PlayerBlock = false;
-	} else if(convar == cvarAlpha){
+	}else if(convar == cvarAlpha){
 		if(newValue[0] == '1')
 			g_Alpha = true;
 		else
 			g_Alpha = false;
-	} else if(convar == cvarAutoFlash){
+	}else if(convar == cvarAutoFlash){
 		if(newValue[0] == '1'){
 			g_AutoFlash = true;
 			HookEvent("player_blind" , Event_flashbang_detonate);
@@ -550,7 +562,7 @@ public OnSettingChanged(Handle:convar, const String:oldValue[], const String:new
 			UnhookEvent("player_blind" , Event_flashbang_detonate);
 			UnhookEvent("weapon_fire" , Event_weapon_fire);
 		}
-	} else if(convar == cvarTracer){
+	}else if(convar == cvarTracer){
 		if(newValue[0] == '1')
 			g_Tracer = true;
 		else
@@ -562,7 +574,7 @@ public OnSettingChanged(Handle:convar, const String:oldValue[], const String:new
 			g_Gravity = true;
 		else
 			g_Gravity = false;
-	} else if(convar == cvarHealClient){
+	}else if(convar == cvarHealClient){
 		if(newValue[0] == '1'){
 			HookEvent("player_hurt", Event_player_hurt);
 			g_HealClient = true;
@@ -570,12 +582,17 @@ public OnSettingChanged(Handle:convar, const String:oldValue[], const String:new
 			g_HealClient = false;
 			UnhookEvent("player_hurt", Event_player_hurt, EventHookMode_Post);
 		}
-	} else if(convar == cvarHintSound){
+	}else if(convar == cvarHintSound){
 		if(newValue[0] == '1')
 			g_HintSound = true;
 		else
 			g_HintSound = false;
-	} else if(convar == cvarSpeedunit){
+	}else if(convar == cvarChatVisible){
+		if(newValue[0] == '1')
+			g_ChatVisible = true;
+		else
+			g_ChatVisible = false;
+	}else if(convar == cvarSpeedunit){
 		if(newValue[0] == '1')
 			g_Speedunit = true;
 		else
@@ -623,8 +640,10 @@ public OnClientDisconnect(client){
 		
 		new current = currentcp[client];
 		//if g_Restore and valid checkpoint
-		if(g_Restore && current != -1)
-			//update the checkpoint in the database
-			db_updatePlayerCheckpoint(client, current);
+		if(g_Restore && current != -1){
+			if(playercords[client][current][0] != 0.0 && playercords[client][current][1] != 0.0 && playercords[client][current][0] != 0.0)
+				//update the checkpoint in the database
+				db_updatePlayerCheckpoint(client, current);
+		}
 	}
 }
