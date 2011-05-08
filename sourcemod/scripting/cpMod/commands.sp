@@ -104,7 +104,7 @@ public Action:Client_Wr(client, args){
 // record panel method //
 //---------------------//
 public RecordPanel(client){
-	db_selectRecord(client);
+	db_viewPlayerRecord(client);
 }
 
 //-------------------------//
@@ -113,9 +113,9 @@ public RecordPanel(client){
 public TopRecordPanel(client){
 	//depending on the record type
 	if(g_RecordType == RECORD_TIME)
-		db_SelectTimeWorldRecord(client);
+		db_selectTimeWorldRecord(client);
 	else
-		db_SelectJumpWorldRecord(client);
+		db_selectJumpWorldRecord(client);
 }
 
 //-------------------//
@@ -331,11 +331,11 @@ public TeleMenu(client){
 		//create panel
 		new Handle:menu = CreateMenu(TeleMenuHandler);
 		SetMenuTitle(menu, "byaaaaah's [cP Mod]");
-		AddMenuItem(menu, "!clear", "Erase all checkpoints");
-		AddMenuItem(menu, "!next", "Next checkpoint");
-		AddMenuItem(menu, "!prev", "Previous checkpoint");
 		AddMenuItem(menu, "!save", "Saves a location");
 		AddMenuItem(menu, "!tele", "Teleports you to last checkpoint");
+		AddMenuItem(menu, "!next", "Next checkpoint");
+		AddMenuItem(menu, "!prev", "Previous checkpoint");
+		AddMenuItem(menu, "!clear", "Erase all checkpoints");
 		SetMenuExitButton(menu, true);
 		SetMenuOptionFlags(menu, MENUFLAG_BUTTON_EXIT);
 		DisplayMenu(menu, client, MENU_TIME_FOREVER);
@@ -348,11 +348,11 @@ public TeleMenu(client){
 public TeleMenuHandler(Handle:menu, MenuAction:action, param1, param2){
 	if(action == MenuAction_Select){
 		switch(param2){
-			case 0: ClearClient(param1);
-			case 1: TeleClient(param1,1);
-			case 2: TeleClient(param1,-1);
 			case 3: SaveClientLocation(param1);
 			case 4: TeleClient(param1,0);
+			case 1: TeleClient(param1,1);
+			case 2: TeleClient(param1,-1);
+			case 0: ClearClient(param1);
 		}
 		TeleMenu(param1);
 	}else if(action == MenuAction_End)

@@ -70,6 +70,13 @@
 		"fr"        "{1}[{2}cP{3} Mod] Vous avez terminé la carte! Type {6}!restart{7} pour réessayer."
 		"de"        "{1}[{2}cP{3} Mod] Du hast die Map geschafft! Schreib {6}!restart{7} um es erneut zu versuchen."
 	}
+	"PlayerRank"
+	{
+		"#format"   "{1:c},{2:c},{3:c},{4:c},{5:s},{6:c},{7:c},{8:i},{9:i},{10:c}"
+		"en"        "{1}[{2}cP{3} Mod] {4}{5}{6} is ranked {7}{8}/{9}{10}!"
+		"fr"        "{1}[{2}cP{3} Mod] {4}{5}{6} est classé {7}{8}/{9}{10}!"
+		"de"        "{1}[{2}cP{3} Mod] {4}{5}{6} ist Rang {7}{8}/{9}{10}!"
+	}
 	"BlockingEnabled"
 	{
 		"#format"   "{1:c},{2:c},{3:c},{4:c},{5:c}"
