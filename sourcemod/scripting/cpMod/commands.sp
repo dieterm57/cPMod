@@ -348,11 +348,11 @@ public TeleMenu(client){
 public TeleMenuHandler(Handle:menu, MenuAction:action, param1, param2){
 	if(action == MenuAction_Select){
 		switch(param2){
-			case 3: SaveClientLocation(param1);
-			case 4: TeleClient(param1,0);
-			case 1: TeleClient(param1,1);
-			case 2: TeleClient(param1,-1);
-			case 0: ClearClient(param1);
+			case 0: SaveClientLocation(param1);
+			case 1: TeleClient(param1,0);
+			case 2: TeleClient(param1,1);
+			case 3: TeleClient(param1,-1);
+			case 4: ClearClient(param1);
 		}
 		TeleMenu(param1);
 	}else if(action == MenuAction_End)

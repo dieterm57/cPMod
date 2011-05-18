@@ -60,10 +60,9 @@ public Action:Event_player_spawn(Handle:event, const String:name[], bool:dontBro
 		//create the timer for the player
 		MapTimer[client] = CreateTimer(1.0, ActionMapTimer, client, TIMER_REPEAT);
 	
-	//custom access??
 	new AdminId:aid = GetUserAdmin(client);
 	//if the player is an admin
-	if(aid != INVALID_ADMIN_ID){
+	if(aid != INVALID_ADMIN_ID && GetAdminFlag(aid, Admin_Generic)){
 		//if player tracer enabled
 		if(g_Tracer)
 			//give him a nice tracer

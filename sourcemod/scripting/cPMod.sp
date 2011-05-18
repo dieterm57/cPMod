@@ -31,7 +31,7 @@
 
 /*
 [cP mod]
-- version 2.0.3
+- version 2.0.4
 
 This plugin allows users to save their location and teleport later.
 It further provides some features for non skilled bHopper like low gravity or a scout.
@@ -65,7 +65,6 @@ Cmds:
 
 Cvars:
 sm_cp_enabled      - <1|0> Enable/Disable the plugin.
-sm_cp_adminlevel   - <"Admin_Root"> Sets the access level for admins.
 sm_cp_timer        - <1|0> Enable/Disable map based timer.
 sm_cp_restore      - <1|0> Enable/Disable automatic saving of checkpoints to database.
 sm_cp_noblock      - <1|0> Enable/Disable player blocking.
@@ -77,7 +76,7 @@ sm_cp_gravity      - <1|0> Enable/Disable player gravity.
 sm_cp_healclient   - <1|0> Enable/Disable healing of falldamage.
 sm_cp_hintsound    - <1|0> Enable/Disable playing sound on popup.
 sm_cp_chatvisible  - <1|0> Sets chat output visible to all or not.
-sm_cp_recordsound  - <"quake/holyshit.wav"> Sets the sound that is played on new record.
+sm_cp_recordsound  - <"quake/holyshit.mp3"> Sets the sound that is played on new record.
 sm_cp_speedunit    - <1|0> Changes the unit of speed displayed in timerpanel [0=default] [1=kmh].
 
 Admin:
@@ -156,6 +155,10 @@ Versions
     - Added chat visibility variable
     - Fixed records being overwritten
     - Cleaned up unnecessary database queries
+2.0.4
+    - Fixed quakesound not being downloaded
+    - Fixed admincommands being executed as regular users
+    - Changed cp menu order
 */
 
 #include <sourcemod>
@@ -167,6 +170,9 @@ Versions
 
 //this variable defines how many checkpoints/player there will be
 #define CPLIMIT 10
+
+//this variable defines who is allowed to execute admin commands
+#define ADMIN_LEVEL ADMFLAG_UNBAN
 
 //-----------------------------//
 // nothing to change over here //
@@ -197,8 +203,8 @@ new Handle:db = INVALID_HANDLE;
 new Handle:cvarEnable = INVALID_HANDLE;
 new bool:g_Enabled = false;
 
-new Handle:cvarAdminLevel = INVALID_HANDLE;
-new Admin_Level;
+//new Handle:cvarAdminLevel = INVALID_HANDLE;
+//new ADMIN_LEVEL;
 
 //new Handle:cvarCpLimit = INVALID_HANDLE;
 //new g_CpLimit = 0;
@@ -307,8 +313,8 @@ public OnPluginStart(){
 	g_Enabled      = GetConVarBool(cvarEnable);
 	HookConVarChange(cvarEnable, OnSettingChanged);
 
-	cvarAdminLevel = CreateConVar("sm_cp_adminlevel", "Admin_Root", "Sets the access level for admins.", FCVAR_PLUGIN);
-	Admin_Level = GetConVarInt(cvarAdminLevel);
+	//cvarAdminLevel = CreateConVar("sm_cp_adminlevel", "ADMFLAG_ROOT", "Sets the access level for admins.", FCVAR_PLUGIN);
+	//ADMIN_LEVEL = GetConVarInt(cvarAdminLevel);
 	
 	//todo: dynamic array resize to use a singel variable
 	//cvarCpLimit = CreateConVar("sm_cp_cplimit", "10", "Sets the limit of checkpoints per player.", FCVAR_PLUGIN, true, 1.0, true, 255.0);
@@ -412,12 +418,12 @@ public OnPluginStart(){
 	RegConsoleCmd("sm_stop", Client_Stop, "Stops the timer");
 	RegConsoleCmd("sm_wr", Client_Wr, "Displays the record on the current map");
 	
-	RegAdminCmd("sm_cpadmin", Admin_CpPanel, Admin_Level, "Displays the admin panel.");
-	RegAdminCmd("sm_purgeplayer", Admin_PurgePlayers, Admin_Level, "Purges all old players.");
-	RegAdminCmd("sm_resetmaps", Admin_ResetMaps, Admin_Level, "Resets all stored map start/end points.");
-	RegAdminCmd("sm_resetplayers", Admin_ResetPlayers, Admin_Level, "Resets all players.");
-	RegAdminCmd("sm_resetcheckpoints", Admin_ResetCheckpoints, Admin_Level, "Resets all checkpoints.");
-	RegAdminCmd("sm_resetrecords", Admin_ResetRecords, Admin_Level, "Resets all records.");
+	RegAdminCmd("sm_cpadmin", Admin_CpPanel, ADMIN_LEVEL, "Displays the admin panel.");
+	RegAdminCmd("sm_purgeplayer", Admin_PurgePlayers, ADMIN_LEVEL, "Purges all old players.");
+	RegAdminCmd("sm_resetmaps", Admin_ResetMaps, ADMIN_LEVEL, "Resets all stored map start/end points.");
+	RegAdminCmd("sm_resetplayers", Admin_ResetPlayers, ADMIN_LEVEL, "Resets all players.");
+	RegAdminCmd("sm_resetcheckpoints", Admin_ResetCheckpoints, ADMIN_LEVEL, "Resets all checkpoints.");
+	RegAdminCmd("sm_resetrecords", Admin_ResetRecords, ADMIN_LEVEL, "Resets all records.");
 	
 	AutoExecConfig(true, "sm_cpmod");
 }
@@ -611,8 +617,6 @@ public OnClientPostAdminCheck(client){
 		MapTimer[client] = INVALID_HANDLE;
 		currentcp[client] = -1;
 		
-		//if(g_Restore && !g_Timer)
-		
 		//select the last checkpoint
 		//(also creates a new entry in the database, if checkpoint not found)
 		db_selectPlayerCheckpoint(client);
@@ -641,7 +645,7 @@ public OnClientDisconnect(client){
 		new current = currentcp[client];
 		//if g_Restore and valid checkpoint
 		if(g_Restore && current != -1){
-			if(playercords[client][current][0] != 0.0 && playercords[client][current][1] != 0.0 && playercords[client][current][0] != 0.0)
+			//if(playercords[client][current][0] != 0.0 && playercords[client][current][1] != 0.0 && playercords[client][current][0] != 0.0)
 				//update the checkpoint in the database
 				db_updatePlayerCheckpoint(client, current);
 		}
