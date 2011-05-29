@@ -84,7 +84,35 @@ public Action:Client_Help(client, args){
 // and even some more client commands //
 //------------------------------------//
 public Action:Client_Record(client, args){
-	RecordPanel(client);
+	if(args == 1){
+		decl String:szMapName[32];
+		GetCmdArg(1, szMapName, MAX_NAME_LENGTH);
+		
+		RecordPanel(client, szMapName);
+	}else
+		RecordPanel(client, g_szMapName);
+	
+	return Plugin_Handled;
+}
+public Action:Client_Player_Record(client, args){
+	//if not enough arguments
+	if(args < 1){
+		ReplyToCommand(client, "[SM] Usage: sm_precord <name>");
+		return Plugin_Handled;
+	}else if(args == 1){
+		decl String:szPlayerName[MAX_NAME_LENGTH];
+		GetCmdArg(1, szPlayerName, MAX_NAME_LENGTH);
+		
+		PlayerRecordPanel(client, szPlayerName, g_szMapName);
+	}else if(args == 2){
+		decl String:szPlayerName[MAX_NAME_LENGTH];
+		decl String:szMapName[32];
+		GetCmdArg(1, szPlayerName, MAX_NAME_LENGTH);
+		GetCmdArg(2, szMapName, MAX_NAME_LENGTH);
+		
+		PlayerRecordPanel(client, szPlayerName, szMapName);
+	}
+	
 	return Plugin_Handled;
 }
 public Action:Client_Restart(client, args){
@@ -103,8 +131,15 @@ public Action:Client_Wr(client, args){
 //---------------------//
 // record panel method //
 //---------------------//
-public RecordPanel(client){
-	db_viewPlayerRecord(client);
+public RecordPanel(client, String:szPlayerName[32]){
+	db_viewRecord(client, szPlayerName);
+}
+
+//----------------------------//
+// player record panel method //
+//----------------------------//
+public PlayerRecordPanel(client, String:szPlayerName[MAX_NAME_LENGTH], String:szMapName[32]){
+  db_viewPlayerRecord(client, szPlayerName, szMapName);
 }
 
 //-------------------------//
@@ -112,7 +147,7 @@ public RecordPanel(client){
 //-------------------------//
 public TopRecordPanel(client){
 	//depending on the record type
-	if(g_RecordType == RECORD_TIME)
+	if(g_bRecordType == RECORD_TIME)
 		db_selectTimeWorldRecord(client);
 	else
 		db_selectJumpWorldRecord(client);
@@ -127,13 +162,13 @@ public StopTimer(client){
 		return;
 	
 	//if timer enabled
-	if(g_Timer){
-		//if maptimer running
-		if(MapTimer[client] != INVALID_HANDLE){
+	if(g_bTimer){
+		//if g_hMapTimer running
+		if(g_hMapTimer[client] != INVALID_HANDLE){
 			//stop it
-			CloseHandle(MapTimer[client]);
-			MapTimer[client] = INVALID_HANDLE;
-			racing[client] = false;
+			CloseHandle(g_hMapTimer[client]);
+			g_hMapTimer[client] = INVALID_HANDLE;
+			g_bRacing[client] = false;
 			
 			PrintToChat(client, "%t", "TimerStopped", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
 		}
@@ -150,13 +185,13 @@ public RestartTimer(client){
 		return;
 		
 	//if timer enabled
-	if(g_Timer){
-		//if maptimer running
-		if(MapTimer[client] != INVALID_HANDLE){
+	if(g_bTimer){
+		//if g_hMapTimer running
+		if(g_hMapTimer[client] != INVALID_HANDLE){
 			//stop it
-			CloseHandle(MapTimer[client]);
-			MapTimer[client] = INVALID_HANDLE;
-			racing[client] = false;
+			CloseHandle(g_hMapTimer[client]);
+			g_hMapTimer[client] = INVALID_HANDLE;
+			g_bRacing[client] = false;
 		}
 		
 		//@deprecated
@@ -181,15 +216,15 @@ public ToogleBlock(client){
 		return;
 	
 	//if noblock enabled and player may choose blocking
-	if(g_Noblock && g_PlayerBlock){
+	if(g_bNoBlock && g_bPlayerBlock){
 		//depending on current blocking state
-		if(blocking[client]){
+		if(g_bBlocking[client]){
 			SetEntData(client, FindSendPropOffs("CBaseEntity", "m_CollisionGroup"), 2, 4, true);
-			blocking[client] = false;
+			g_bBlocking[client] = false;
 			PrintToChat(client, "%t", "BlockingDisabled", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
 		}else{
 			SetEntData(client, FindSendPropOffs("CBaseEntity", "m_CollisionGroup"), 5, 4, true);
-			blocking[client] = true;
+			g_bBlocking[client] = true;
 			PrintToChat(client, "%t", "BlockingEnabled", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
 		}
 	}else //noblock disabled
@@ -205,10 +240,10 @@ public ScoutClient(client){
 		return;
 		
 	//if scounts given smaller than the limit
-	if(scouts[client] < g_Scoutlimit){
+	if(g_Scouts[client] < g_ScoutLimit){
 		//spawn a scout
 		GivePlayerItem(client, "weapon_scout");
-		scouts[client] ++;
+		g_Scouts[client] ++;
 		PrintToChat(client, "%t", "ScoutGiven", YELLOW,LIGHTGREEN,YELLOW);
 	}else //limit reached
 		PrintToChat(client, "%t", "ScoutLimit", YELLOW,LIGHTGREEN,YELLOW);
@@ -223,7 +258,7 @@ public ClientGravity(client,Float:amount){
 		return;
 		
 	//if player gravity is enabled
-	if(g_Gravity){
+	if(g_bGravity){
 		//set amount to the new value
 		SetEntityGravity(client, amount);
 		if(amount>=1.0)
@@ -243,25 +278,25 @@ public SaveClientLocation(client){
 		return;
 	
 	//if plugin is enabled
-	if(g_Enabled){
+	if(g_bEnabled){
 		//if player on ground
 		if(GetEntDataEnt2(client, FindSendPropOffs("CBasePlayer", "m_hGroundEntity")) != -1){
-			new whole = wholecp[client];
+			new whole = g_WholeCp[client];
 			
 			//if player has less than limit checkpoints
 			if(whole < CPLIMIT){
 				//save some data
-				GetClientAbsOrigin(client,playercords[client][whole]);
-				GetClientAbsAngles(client,playerangles[client][whole]);
+				GetClientAbsOrigin(client,g_fPlayerCords[client][whole]);
+				GetClientAbsAngles(client,g_fPlayerAngles[client][whole]);
 				
 				//increase counters
-				currentcp[client] = wholecp[client];
-				wholecp[client] ++;
+				g_CurrentCp[client] = g_WholeCp[client];
+				g_WholeCp[client] ++;
 				
 				PrintToChat(client, "%t", "CpSaved", YELLOW,LIGHTGREEN,YELLOW,GREEN,whole+1,whole+1,YELLOW);
 				
 				EmitSoundToClient(client,"buttons/blip1.wav",client);
-				TE_SetupBeamRingPoint(playercords[client][whole],10.0,200.0,BeamSpriteRing1,0,0,10,1.0,50.0,0.0,{255,255,255,255},0,0);
+				TE_SetupBeamRingPoint(g_fPlayerCords[client][whole],10.0,200.0,g_BeamSpriteRing1,0,0,10,1.0,50.0,0.0,{255,255,255,255},0,0);
 				TE_SendToClient(client);
 			}else //checkpoint limit
 				PrintToChat(client, "%t", "CpLimit", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
@@ -280,36 +315,36 @@ public TeleClient(client,pos){
 		return;
 	
 	//if plugin is enabled
-	if(g_Enabled){
-		if(!racing[client]){
-			new current = currentcp[client];
-			new whole = wholecp[client];
+	if(g_bEnabled){
+		if(!g_bRacing[client]){
+			new current = g_CurrentCp[client];
+			new whole = g_WholeCp[client];
 			
 			//if on last slot go to next
 			if(current == whole-1 && pos == 1){
 				//reset to first
-				currentcp[client] = -1;
+				g_CurrentCp[client] = -1;
 				current = -1;
 			}
 			//if on first slot and previous
 			if(current == 0  && pos == -1){
 				//reset to last
-				currentcp[client] = whole;
+				g_CurrentCp[client] = whole;
 				current = whole;
 			}
 			
 			new actual = current+pos;
 			
 			//if not valid checkpoint
-			if(actual < 0 || actual > whole || (playercords[client][actual][0] == 0.0 && playercords[client][actual][1] == 0.0 && playercords[client][actual][2] == 0.0)){
+			if(actual < 0 || actual > whole || (g_fPlayerCords[client][actual][0] == 0.0 && g_fPlayerCords[client][actual][1] == 0.0 && g_fPlayerCords[client][actual][2] == 0.0)){
 				PrintToChat(client, "%t", "CpNotFound", YELLOW,LIGHTGREEN,YELLOW);
 			}else{ //valid
-				TeleportEntity(client, playercords[client][actual],playerangles[client][actual],NULL_VECTOR);
+				TeleportEntity(client, g_fPlayerCords[client][actual],g_fPlayerAngles[client][actual],NULL_VECTOR);
 				PrintToChat(client, "%t", "CpTeleported", YELLOW,LIGHTGREEN,YELLOW,GREEN,actual+1,whole,YELLOW);
-				currentcp[client] += pos;
+				g_CurrentCp[client] += pos;
 				
 				EmitSoundToClient(client,"buttons/blip1.wav",client);
-				TE_SetupBeamRingPoint(playercords[client][actual],10.0,200.0,BeamSpriteRing2,0,0,10,1.0,50.0,0.0,{255,255,255,255},0,0);
+				TE_SetupBeamRingPoint(g_fPlayerCords[client][actual],10.0,200.0,g_BeamSpriteRing2,0,0,10,1.0,50.0,0.0,{255,255,255,255},0,0);
 				TE_SendToClient(client);
 			}
 		}else //client is on a race
@@ -327,7 +362,7 @@ public TeleMenu(client){
 		return;
 	
 	//if plugin is enabled
-	if(g_Enabled){
+	if(g_bEnabled){
 		//create panel
 		new Handle:menu = CreateMenu(TeleMenuHandler);
 		SetMenuTitle(menu, "byaaaaah's [cP Mod]");
@@ -368,20 +403,20 @@ public ClearClient(client){
 		return;
 	
 	//if plugin is enabled
-	if(g_Enabled){
+	if(g_bEnabled){
 		//reset counters
-		currentcp[client] = -1;
-		wholecp[client] = 0;
+		g_CurrentCp[client] = -1;
+		g_WholeCp[client] = 0;
 		
 		//@deprecated
 		/* superfluous
 		for(new i = 0; i < CPLIMIT; i++){
-			playercords[client][i][0]=0.0;
-			playercords[client][i][1]=0.0;
-			playercords[client][i][2]=0.0;
-			playerangles[client][i][0]=0.0;
-			playerangles[client][i][1]=0.0;
-			playerangles[client][i][2]=0.0;
+			g_fPlayerCords[client][i][0]=0.0;
+			g_fPlayerCords[client][i][1]=0.0;
+			g_fPlayerCords[client][i][2]=0.0;
+			g_fPlayerAngles[client][i][0]=0.0;
+			g_fPlayerAngles[client][i][1]=0.0;
+			g_fPlayerAngles[client][i][2]=0.0;
 		}*/
 		
 		PrintToChat(client, "%t", "Cleared", YELLOW,LIGHTGREEN,YELLOW);
