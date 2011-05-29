@@ -32,8 +32,13 @@
 // admin cp command hook //
 //-----------------------//
 public Action:Admin_CpPanel(client, args){
-	//call the method
-	CpAdminPanel(client); 
+	if(g_hcpSetterTimer == INVALID_HANDLE)
+		CpAdminPanel(client);
+	else{
+		PrintToChat(client, "%t", "CpPanelInAccess", YELLOW,LIGHTGREEN,YELLOW);
+		PrintToChat(client, "%i", g_hcpSetterTimer);
+	}
+	
 	return Plugin_Handled;
 }
 //-------------------------//
@@ -56,16 +61,17 @@ public CpAdminPanelHandler(Handle:menu, MenuAction:action, param1, param2){
 	if(action == MenuAction_Select){
 		//depending on item selected
 		if(param2 == 0){ //start
-			GetClientAbsOrigin(param1,cpsetbcords);
-			CpSetterTimer = CreateTimer(0.1, CpSetTimer, param1, TIMER_REPEAT);
+			GetClientAbsOrigin(param1,g_fCpSetBCords);
+			g_hcpSetterTimer = CreateTimer(0.1, CpSetTimer, param1, TIMER_REPEAT);
 			CpAdminPanelStart(param1);
 		}else{ //stop
-			GetClientAbsOrigin(param1,cpsetbcords);
-			CpSetterTimer = CreateTimer(0.1, CpSetTimer, param1, TIMER_REPEAT);
+			GetClientAbsOrigin(param1,g_fCpSetBCords);
+			g_hcpSetterTimer = CreateTimer(0.1, CpSetTimer, param1, TIMER_REPEAT);
 			CpAdminPanelStop(param1);
 		}
-	}else if(action == MenuAction_End)
+	}else if(action == MenuAction_End){
 		CloseHandle(menu);
+	}
 }
 
 //--------------------------//
@@ -92,8 +98,9 @@ public CpAdminPanelStartHandler(Handle:menu, MenuAction:action, param1, param2){
 		}
 	}else if(action == MenuAction_End){
 		//close the box update timer
-		if(CpSetterTimer != INVALID_HANDLE)
-			CloseHandle(CpSetterTimer);
+		CloseHandle(g_hcpSetterTimer);
+		g_hcpSetterTimer = INVALID_HANDLE
+			
 		CloseHandle(menu);
 	}
 }
@@ -120,8 +127,10 @@ public CpAdminPanelStopHandler(Handle:menu, MenuAction:action, param1, param2){
 			CpAdminPanel(param1);
 		}
 	}else if(action == MenuAction_End){
-		if(CpSetterTimer != INVALID_HANDLE)
-			CloseHandle(CpSetterTimer);
+		//close the box update timer
+		CloseHandle(g_hcpSetterTimer);
+		g_hcpSetterTimer = INVALID_HANDLE
+		
 		CloseHandle(menu);
 	}
 }
@@ -133,66 +142,73 @@ public Action:CpSetTimer(Handle:timer, any:client){
 	//if valid player
 	if(client != 0 && IsClientInGame(client) && IsPlayerAlive(client)){
 		//get position
-		GetClientAbsOrigin(client,cpsetecords);
+		GetClientAbsOrigin(client,g_fCpSetECords);
 		
 		//initialize tempoary variables bottom front
-		decl Float:leftbottomfront[3];
-		leftbottomfront[0] = cpsetbcords[0];
-		leftbottomfront[1] = cpsetbcords[1];
-		leftbottomfront[2] = cpsetecords[2];
-		decl Float:rightbottomfront[3];
-		rightbottomfront[0] = cpsetecords[0];
-		rightbottomfront[1] = cpsetbcords[1];
-		rightbottomfront[2] = cpsetecords[2];
+		decl Float:fLeftBottomFront[3];
+		fLeftBottomFront[0] = g_fCpSetBCords[0];
+		fLeftBottomFront[1] = g_fCpSetBCords[1];
+		fLeftBottomFront[2] = g_fCpSetECords[2];
+		decl Float:fRightBottomFront[3];
+		fRightBottomFront[0] = g_fCpSetECords[0];
+		fRightBottomFront[1] = g_fCpSetBCords[1];
+		fRightBottomFront[2] = g_fCpSetECords[2];
 		
 		//initialize tempoary variables bottom back
-		decl Float:leftbottomback[3];
-		leftbottomback[0] = cpsetbcords[0];
-		leftbottomback[1] = cpsetecords[1];
-		leftbottomback[2] = cpsetecords[2];
-		decl Float:rightbottomback[3];
-		rightbottomback[0] = cpsetecords[0];
-		rightbottomback[1] = cpsetecords[1];
-		rightbottomback[2] = cpsetecords[2];
+		decl Float:fLeftBottomBack[3];
+		fLeftBottomBack[0] = g_fCpSetBCords[0];
+		fLeftBottomBack[1] = g_fCpSetECords[1];
+		fLeftBottomBack[2] = g_fCpSetECords[2];
+		decl Float:fRightBottomBack[3];
+		fRightBottomBack[0] = g_fCpSetECords[0];
+		fRightBottomBack[1] = g_fCpSetECords[1];
+		fRightBottomBack[2] = g_fCpSetECords[2];
 		
 		//initialize tempoary variables top front
 		decl Float:lefttopfront[3];
-		lefttopfront[0] = cpsetbcords[0];
-		lefttopfront[1] = cpsetbcords[1];
-		lefttopfront[2] = cpsetbcords[2]+100;
+		lefttopfront[0] = g_fCpSetBCords[0];
+		lefttopfront[1] = g_fCpSetBCords[1];
+		lefttopfront[2] = g_fCpSetBCords[2]+100;
 		decl Float:righttopfront[3];
-		righttopfront[0] = cpsetecords[0];
-		righttopfront[1] = cpsetbcords[1];
-		righttopfront[2] = cpsetbcords[2]+100;
+		righttopfront[0] = g_fCpSetECords[0];
+		righttopfront[1] = g_fCpSetBCords[1];
+		righttopfront[2] = g_fCpSetBCords[2]+100;
 		
 		//initialize tempoary variables top back
-		decl Float:lefttopback[3];
-		lefttopback[0] = cpsetbcords[0];
-		lefttopback[1] = cpsetecords[1];
-		lefttopback[2] = cpsetbcords[2]+100;
-		decl Float:righttopback[3];
-		righttopback[0] = cpsetecords[0];
-		righttopback[1] = cpsetecords[1];
-		righttopback[2] = cpsetbcords[2]+100;
+		decl Float:fLeftTopBack[3];
+		fLeftTopBack[0] = g_fCpSetBCords[0];
+		fLeftTopBack[1] = g_fCpSetECords[1];
+		fLeftTopBack[2] = g_fCpSetBCords[2]+100;
+		decl Float:fRightTopBack[3];
+		fRightTopBack[0] = g_fCpSetECords[0];
+		fRightTopBack[1] = g_fCpSetECords[1];
+		fRightTopBack[2] = g_fCpSetBCords[2]+100;
 		
 		//create the box
-		TE_SetupBeamPoints(leftbottomfront,rightbottomfront,BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,255,0,255},0);TE_SendToAll();
-		TE_SetupBeamPoints(leftbottomfront,leftbottomback,BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,255,0,255},0);TE_SendToAll();
-		TE_SetupBeamPoints(leftbottomfront,lefttopfront,BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,255,0,255},0);TE_SendToAll();
+		TE_SetupBeamPoints(fLeftBottomFront,fRightBottomFront,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToAll();
+		TE_SetupBeamPoints(fLeftBottomFront,fLeftBottomBack,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToAll();
+		TE_SetupBeamPoints(fLeftBottomFront,lefttopfront,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToAll();
 		
-		TE_SetupBeamPoints(lefttopfront,righttopfront,BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,255,0,255},0);TE_SendToAll();
-		TE_SetupBeamPoints(lefttopfront,lefttopback,BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,255,0,255},0);TE_SendToAll();
-		TE_SetupBeamPoints(righttopback,lefttopback,BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,255,0,255},0);TE_SendToAll();
-		TE_SetupBeamPoints(righttopback,righttopfront,BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,255,0,255},0);TE_SendToAll();
+		TE_SetupBeamPoints(lefttopfront,righttopfront,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToAll();
+		TE_SetupBeamPoints(lefttopfront,fLeftTopBack,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToAll();
+		TE_SetupBeamPoints(fRightTopBack,fLeftTopBack,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToAll();
+		TE_SetupBeamPoints(fRightTopBack,righttopfront,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToAll();
 		
-		TE_SetupBeamPoints(rightbottomback,leftbottomback,BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,255,0,255},0);TE_SendToAll();
-		TE_SetupBeamPoints(rightbottomback,rightbottomfront,BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,255,0,255},0);TE_SendToAll();
-		TE_SetupBeamPoints(rightbottomback,righttopback,BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,255,0,255},0);TE_SendToAll();
+		TE_SetupBeamPoints(fRightBottomBack,fLeftBottomBack,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToAll();
+		TE_SetupBeamPoints(fRightBottomBack,fRightBottomFront,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToAll();
+		TE_SetupBeamPoints(fRightBottomBack,fRightTopBack,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToAll();
 		
-		TE_SetupBeamPoints(rightbottomfront,righttopfront,BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,255,0,255},0);TE_SendToAll();
-		TE_SetupBeamPoints(leftbottomback,lefttopback,BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,255,0,255},0);TE_SendToAll();
-	}else //no valid player
-		CloseHandle(CpSetterTimer);
+		TE_SetupBeamPoints(fRightBottomFront,righttopfront,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToAll();
+		TE_SetupBeamPoints(fLeftBottomBack,fLeftTopBack,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToAll();
+		
+		TE_SendToClient(client, 0.0);
+	}else{ //no valid player
+		//close the box update timer if not closed before
+		if(g_hcpSetterTimer != INVALID_HANDLE){
+			CloseHandle(g_hcpSetterTimer);
+			g_hcpSetterTimer = INVALID_HANDLE
+		}
+	}
 }
 
 
@@ -200,17 +216,32 @@ public Action:CpSetTimer(Handle:timer, any:client){
 // stet timer cords methd //
 //------------------------//
 public SetTimerCords(client, pos){
-	decl String:bcords[38];
-	decl String:ecords[38];
+	decl String:szBCords[38];
+	decl String:szECords[38];
+	
+	//update global variables if timer enabled
+	if(g_bTimer){
+		if(pos == POS_START){
+			g_fMapTimer_start0_cords = g_fCpSetBCords;
+			g_fMapTimer_start1_cords = g_fCpSetECords;
+		}else{
+			g_fMapTimer_end0_cords = g_fCpSetBCords;
+			g_fMapTimer_end1_cords = g_fCpSetECords;
+		}
+	}
 	
 	//format the coordinates in string buffers
-	Format(bcords, 38, "%f:%f:%f",cpsetbcords[0],cpsetbcords[1],cpsetbcords[2]-50);
-	Format(ecords, 38, "%f:%f:%f",cpsetecords[0],cpsetecords[1],cpsetecords[2]+50);
+	Format(szBCords, 38, "%f:%f:%f",g_fCpSetBCords[0],g_fCpSetBCords[1],g_fCpSetBCords[2]-50);
+	Format(szECords, 38, "%f:%f:%f",g_fCpSetECords[0],g_fCpSetECords[1],g_fCpSetECords[2]+50);
 	
 	//update the coordinates in the database
-	db_updateMapStartStop(client, bcords, ecords, pos);
+	db_updateMapStartStop(client, szBCords, szECords, pos);
+	
 	//do not update the box anymore
-	CloseHandle(CpSetterTimer);
+	if(g_hcpSetterTimer != INVALID_HANDLE){
+		CloseHandle(g_hcpSetterTimer);
+		g_hcpSetterTimer = INVALID_HANDLE
+	}
 	
 	EmitSoundToClient(client,"buttons/blip1.wav",client);
 }
@@ -222,14 +253,14 @@ public SetTimerCords(client, pos){
 public Action:Admin_PurgePlayers(client, args){
 	//if not enough arguments
 	if (args < 2){
-		ReplyToCommand(client, "[SM] Usage: sm_cp_purgeplayer <days>");
+		ReplyToCommand(client, "[SM] Usage: sm_purgeplayer <days>");
 		return Plugin_Handled;
 	}
 	
 	//create the database query
-	decl String:szdays[8];
-	GetCmdArg(1, szdays, 8);
-	db_purgePlayer(client, szdays);
+	decl String:szDays[8];
+	GetCmdArg(1, szDays, 8);
+	db_purgePlayer(client, szDays);
 	return Plugin_Handled;
 }
 

@@ -7,6 +7,13 @@
 		"fr"        "{1}[{2}cP{3} Mod] Plugin handicapés."
 		"de"        "{1}[{2}cP{3} Mod] Plugin deaktiviert."
 	}
+	"CpPanelInAccess"
+	{
+		"#format"   "{1:c},{2:c},{3:c}"
+		"en"        "{1}[{2}cP{3} Mod] Another panel is allready opened! Please wait..."
+		"fr"        "{1}[{2}cP{3} Mod] Un autre panneau est déja ouvert! S'il vous plaît patienter ..."
+		"de"        "{1}[{2}cP{3} Mod] Ein anderes Panel ist bereits offen! Bitte warten..."
+	}
 	"Cleared"
 	{
 		"#format"   "{1:c},{2:c},{3:c}"
@@ -192,8 +199,8 @@
 	"EndSet"
 	{
 		"#format"   "{1:c},{2:c},{3:c}"
-		"en"        "{1}[{2}cP{3} Mod] End coordinate set. Please restart the map."
-		"fr"        "{1}[{2}cP{3} Mod] Fin de coordonner ensemble. S'il vous plaît restar la carte."
-		"de"        "{1}[{2}cP{3} Mod] Endtkoordinate gesetzt. Bitte Map restarten."
+		"en"        "{1}[{2}cP{3} Mod] End coordinate set."
+		"fr"        "{1}[{2}cP{3} Mod] Fin de coordonner ensemble."
+		"de"        "{1}[{2}cP{3} Mod] Endtkoordinate gesetzt."
 	}
 }

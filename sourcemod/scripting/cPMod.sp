@@ -31,7 +31,7 @@
 
 /*
 [cP mod]
-- version 2.0.4
+- version 2.0.5
 
 This plugin allows users to save their location and teleport later.
 It further provides some features for non skilled bHopper like low gravity or a scout.
@@ -57,10 +57,11 @@ Cmds:
 !lowgrav    - Sets player gravity to low
 !normalgrav - Sets player gravity to default
 
-!record     - Displays your record
-!restart    - Restarts your timer
-!stop       - Stops the timer
-!wr         - Displays the record on the current map
+!record <map>         - Displays your record
+!precord <name> <map> - Displays the record of a given player
+!restart              - Restarts your timer
+!stop                 - Stops the timer
+!wr                   - Displays the record on the current map
 
 
 Cvars:
@@ -76,14 +77,17 @@ sm_cp_gravity      - <1|0> Enable/Disable player gravity.
 sm_cp_healclient   - <1|0> Enable/Disable healing of falldamage.
 sm_cp_hintsound    - <1|0> Enable/Disable playing sound on popup.
 sm_cp_chatvisible  - <1|0> Sets chat output visible to all or not.
-sm_cp_recordsound  - <"quake/holyshit.mp3"> Sets the sound that is played on new record.
+sm_cp_RecordSound  - <"quake/holyshit.mp3"> Sets the sound that is played on new record.
 sm_cp_speedunit    - <1|0> Changes the unit of speed displayed in timerpanel [0=default] [1=kmh].
 
 Admin:
-sm_cp_cpadmin        - Displays the admin menu
-sm_cp_resetcp        - Resets checkpoints of all players.
-sm_cp_purgecp <days> - Purges checkpoints.
-sm_cp_resettimer     - Resets timers of all players
+sm_cpadmin            - Displays the admin panel.
+sm_purgeplayer <days> - Purges all old players.
+sm_resetmaps          - Resets all stored map start/end points.
+sm_resetplayers       - Resets all players.
+sm_resetcheckpoints   - Resets all checkpoints.
+sm_resetrecords       - Resets all records.
+	
 
 Versions
 1.0
@@ -158,7 +162,16 @@ Versions
 2.0.4
     - Fixed quakesound not being downloaded
     - Fixed admincommands being executed as regular users
+    - Fixed invalid handle spaming
     - Changed cp menu order
+2.0.5
+    - Fixed cPAdmin being able to open twice
+    - Changed all variable names to a single standard
+    - Changed start/stop setup boxes visibility to admin only
+    - No need to restart the map after setting timer cords
+    - Added quakesound available check
+    - Added precord <name> <mapname> command
+    - Enhanced record command to record <mapname>
 */
 
 #include <sourcemod>
@@ -178,7 +191,7 @@ Versions
 // nothing to change over here //
 //-----------------------------//
 //...
-#define VERSION "2.0.3"
+#define VERSION "2.0.5b"
 
 #define YELLOW 0x01
 #define TEAMCOLOR 0x02
@@ -197,88 +210,81 @@ Versions
 //-------------------//
 // many variables :) //
 //-------------------//
-new g_dbtype;
-new Handle:db = INVALID_HANDLE;
+new g_DbType;
+new Handle:g_hDb = INVALID_HANDLE;
 
-new Handle:cvarEnable = INVALID_HANDLE;
-new bool:g_Enabled = false;
+new Handle:g_hcvarEnable = INVALID_HANDLE;
+new bool:g_bEnabled = false;
 
-//new Handle:cvarAdminLevel = INVALID_HANDLE;
-//new ADMIN_LEVEL;
-
-//new Handle:cvarCpLimit = INVALID_HANDLE;
-//new g_CpLimit = 0;
-
-//new Handle:h_GameConf;
-//new Handle:h_Respawn;
-
-new Handle:cvarCleanupGuns = INVALID_HANDLE;
-new bool:g_CleanupGuns = false;
+new Handle:g_hcvarCleanupGuns = INVALID_HANDLE;
+new bool:g_bCleanupGuns = false;
 new g_WeaponParent;
 
-new Handle:cvarTimer = INVALID_HANDLE;
-new bool:g_Timer = false;
-new Handle:cvarRecordType = INVALID_HANDLE;
-new g_RecordType = RECORD_TIME;
+new Handle:g_hcvarTimer = INVALID_HANDLE;
+new bool:g_bTimer = false;
+new Handle:g_hcvarRecordType = INVALID_HANDLE;
+new g_bRecordType = RECORD_TIME;
 
-new bool:g_CordsSet = false;
-new Handle:cvarRestore = INVALID_HANDLE;
-new bool:g_Restore = false;
+new bool:g_bCordsSet = false;
+new Handle:g_hcvarRestore = INVALID_HANDLE;
+new bool:g_bRestore = false;
 
-new Handle:cvarNoblock = INVALID_HANDLE;
-new bool:g_Noblock = false;
-new Handle:cvarPlayerBlock = INVALID_HANDLE;
-new bool:g_PlayerBlock = false;
-new Handle:cvarAlpha = INVALID_HANDLE;
-new bool:g_Alpha = false;
-new Handle:cvarAutoFlash = INVALID_HANDLE
-new bool:g_AutoFlash = false;
-new Handle:cvarTracer = INVALID_HANDLE;
-new bool:g_Tracer = false;
-new Handle:cvarScoutLimit = INVALID_HANDLE;
-new g_Scoutlimit = 0;
-new Handle:cvarGravity = INVALID_HANDLE;
-new bool:g_Gravity = false;
-new Handle:cvarHealClient = INVALID_HANDLE;
-new bool:g_HealClient = false;
-new Handle:cvarHintSound = INVALID_HANDLE;
-new bool:g_HintSound = false;
-new Handle:cvarRecordSound = INVALID_HANDLE;
-new bool:g_Speedunit = false;
-new Handle:cvarSpeedunit = INVALID_HANDLE;
-new bool:g_ChatVisible = false;
-new Handle:cvarChatVisible = INVALID_HANDLE;
+new Handle:g_hcvarNoBlock = INVALID_HANDLE;
+new bool:g_bNoBlock = false;
+new Handle:g_hcvarPlayerBlock = INVALID_HANDLE;
+new bool:g_bPlayerBlock = false;
+new Handle:g_hcvarAlpha = INVALID_HANDLE;
+new bool:g_bAlpha = false;
+new Handle:g_hcvarAutoFlash = INVALID_HANDLE
+new bool:g_bAutoFlash = false;
+new Handle:g_hcvarTracer = INVALID_HANDLE;
+new bool:g_bTracer = false;
+new Handle:g_hcvarScoutLimit = INVALID_HANDLE;
+new g_ScoutLimit = 0;
+new Handle:g_hcvarGravity = INVALID_HANDLE;
+new bool:g_bGravity = false;
+new Handle:g_hcvarHealClient = INVALID_HANDLE;
+new bool:g_bHealClient = false;
+new Handle:g_hcvarHintSound = INVALID_HANDLE;
+new bool:g_bHintSound = false;
 
-new Handle:TraceTimer[MAXPLAYERS+1];
-new Handle:MapTimer[MAXPLAYERS+1];
-new bool:racing[MAXPLAYERS+1];
-new Handle:CleanTimer = INVALID_HANDLE;
-new Handle:CpSetterTimer = INVALID_HANDLE;
-new Float:cpsetbcords[3];
-new Float:cpsetecords[3];
-new Float:maptimer_start0_cords[3];
-new Float:maptimer_start1_cords[3];
-new Float:maptimer_end0_cords[3];
-new Float:maptimer_end1_cords[3];
+new Handle:g_hcvarRecordSound = INVALID_HANDLE;
+new String:g_szRecordSound[PLATFORM_MAX_PATH];
+new bool:g_bRecordSound = false;
 
-new Float:playercords[MAXPLAYERS+1][CPLIMIT][3];
-new Float:playerangles[MAXPLAYERS+1][CPLIMIT][3];
+new bool:g_bSpeedUnit = false;
+new Handle:g_hcvarSpeedUnit = INVALID_HANDLE;
+new bool:g_bChatVisible = false;
+new Handle:g_hcvarChatVisible = INVALID_HANDLE;
+
+new Handle:g_hTraceTimer[MAXPLAYERS+1];
+new Handle:g_hMapTimer[MAXPLAYERS+1];
+new bool:g_bRacing[MAXPLAYERS+1];
+new Handle:g_hCleanTimer = INVALID_HANDLE;
+new Handle:g_hcpSetterTimer = INVALID_HANDLE;
+new Float:g_fCpSetBCords[3];
+new Float:g_fCpSetECords[3];
+new Float:g_fMapTimer_start0_cords[3];
+new Float:g_fMapTimer_start1_cords[3];
+new Float:g_fMapTimer_end0_cords[3];
+new Float:g_fMapTimer_end1_cords[3];
+
+new Float:g_fPlayerCords[MAXPLAYERS+1][CPLIMIT][3];
+new Float:g_fPlayerAngles[MAXPLAYERS+1][CPLIMIT][3];
 
 
-new currentcp[MAXPLAYERS+1];
-new wholecp[MAXPLAYERS+1];
-new bool:blocking[MAXPLAYERS+1];
-new scouts[MAXPLAYERS+1];
-new runtime[MAXPLAYERS+1];
-new runjumps[MAXPLAYERS+1];
-new String:mapname[32];
+new g_CurrentCp[MAXPLAYERS+1];
+new g_WholeCp[MAXPLAYERS+1];
+new bool:g_bBlocking[MAXPLAYERS+1];
+new g_Scouts[MAXPLAYERS+1];
+new g_RunTime[MAXPLAYERS+1];
+new g_RunJumps[MAXPLAYERS+1];
+new String:g_szMapName[32];
 
-new recordjumps;
-new recordtime;
+new g_RecordJumps;
+new g_RecordTime;
 
-new String:recordSound[32];
-
-new BeamSpriteFollow,BeamSpriteRing1,BeamSpriteRing2;
+new g_BeamSpriteFollow, g_BeamSpriteRing1,g_BeamSpriteRing2;
 
 
 //----------//
@@ -307,98 +313,77 @@ public OnPluginStart(){
 	HookEvent("player_jump",Event_player_jump);
 	
 	db_setupDatabase();
-	
 	CreateConVar("cPMod_version", VERSION, "cP Mod version.", FCVAR_DONTRECORD|FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
-	cvarEnable     = CreateConVar("sm_cp_enabled", "1", "Enable/Disable the plugin.", FCVAR_PLUGIN|FCVAR_NOTIFY, true, 0.0, true, 1.0);
-	g_Enabled      = GetConVarBool(cvarEnable);
-	HookConVarChange(cvarEnable, OnSettingChanged);
-
-	//cvarAdminLevel = CreateConVar("sm_cp_adminlevel", "ADMFLAG_ROOT", "Sets the access level for admins.", FCVAR_PLUGIN);
-	//ADMIN_LEVEL = GetConVarInt(cvarAdminLevel);
+	g_hcvarEnable     = CreateConVar("sm_cp_enabled", "1", "Enable/Disable the plugin.", FCVAR_PLUGIN|FCVAR_NOTIFY, true, 0.0, true, 1.0);
+	g_bEnabled      = GetConVarBool(g_hcvarEnable);
+	HookConVarChange(g_hcvarEnable, OnSettingChanged);
 	
-	//todo: dynamic array resize to use a singel variable
-	//cvarCpLimit = CreateConVar("sm_cp_cplimit", "10", "Sets the limit of checkpoints per player.", FCVAR_PLUGIN, true, 1.0, true, 255.0);
-	//g_CpLimit   = GetConVarInt(cvarCpLimit);
-	
-	//playercords  = new Float:[MAXPLAYERS+1][g_CpLimit][3];
-	//playerangles = new Float:[MAXPLAYERS+1][g_CpLimit][3];
-	
-	cvarCleanupGuns  = CreateConVar("sm_cp_cleanupguns", "1", "Enable/Disable automatic removal of weapons.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
-	HookConVarChange(cvarCleanupGuns, OnSettingChanged);
-	g_CleanupGuns    = GetConVarBool(cvarCleanupGuns);
+	g_hcvarCleanupGuns  = CreateConVar("sm_cp_cleanupguns", "1", "Enable/Disable automatic removal of weapons.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	HookConVarChange(g_hcvarCleanupGuns, OnSettingChanged);
+	g_bCleanupGuns    = GetConVarBool(g_hcvarCleanupGuns);
 	g_WeaponParent   = FindSendPropOffs("CBaseCombatWeapon", "m_hOwnerEntity");
 	
-	cvarTimer      = CreateConVar("sm_cp_timer", "1", "Enable/Disable map based timer.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
-	g_Timer        = GetConVarBool(cvarTimer);
-	HookConVarChange(cvarTimer, OnSettingChanged);
-	cvarRecordType = CreateConVar("sm_cp_recordtype", "0", "Sets recordtype to time(0) or jumps(1).", FCVAR_PLUGIN, true, 0.0, true, 1.0);
-	g_RecordType   = GetConVarInt(cvarRecordType);
-	HookConVarChange(cvarRecordType, OnSettingChanged);
+	g_hcvarTimer      = CreateConVar("sm_cp_timer", "1", "Enable/Disable map based timer.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	g_bTimer          = GetConVarBool(g_hcvarTimer);
+	HookConVarChange(g_hcvarTimer, OnSettingChanged);
+	g_hcvarRecordType = CreateConVar("sm_cp_recordtype", "0", "Sets recordtype to time(0) or jumps(1).", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	g_bRecordType     = GetConVarInt(g_hcvarRecordType);
+	HookConVarChange(g_hcvarRecordType, OnSettingChanged);
 	
-	cvarRestore    = CreateConVar("sm_cp_restore", "1", "Enable/Disable automatic saving of checkpoints to database.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
-	g_Restore      = GetConVarBool(cvarRestore);
-	HookConVarChange(cvarRestore, OnSettingChanged);
+	g_hcvarRestore    = CreateConVar("sm_cp_restore", "1", "Enable/Disable automatic saving of checkpoints to database.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	g_bRestore        = GetConVarBool(g_hcvarRestore);
+	HookConVarChange(g_hcvarRestore, OnSettingChanged);
 	
-	cvarNoblock    = CreateConVar("sm_cp_noblock", "1", "Enable/Disable player blocking.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
-	g_Noblock      = GetConVarBool(cvarNoblock);
-	HookConVarChange(cvarNoblock, OnSettingChanged);
+	g_hcvarNoBlock    = CreateConVar("sm_cp_noblock", "1", "Enable/Disable player blocking.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	g_bNoBlock        = GetConVarBool(g_hcvarNoBlock);
+	HookConVarChange(g_hcvarNoBlock, OnSettingChanged);
 	
-	cvarPlayerBlock = CreateConVar("sm_cp_playerblock", "1", "Enable/Disable player !block command.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
-	g_PlayerBlock   = GetConVarBool(cvarPlayerBlock);
-	HookConVarChange(cvarPlayerBlock, OnSettingChanged);
+	g_hcvarPlayerBlock = CreateConVar("sm_cp_playerblock", "1", "Enable/Disable player !block command.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	g_bPlayerBlock     = GetConVarBool(g_hcvarPlayerBlock);
+	HookConVarChange(g_hcvarPlayerBlock, OnSettingChanged);
 	
-	cvarAlpha      = CreateConVar("sm_cp_alpha", "1", "Enable/Disable player alpha.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
-	g_Alpha        = GetConVarBool(cvarAlpha);
-	HookConVarChange(cvarAlpha, OnSettingChanged);
-	cvarAutoFlash  = CreateConVar("sm_cp_autoflash", "0", "Enable/Disable auto flashbang giver.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
-	g_AutoFlash    = GetConVarBool(cvarAutoFlash);
-	HookConVarChange(cvarAutoFlash, OnSettingChanged);
-	if(cvarAutoFlash){
+	g_hcvarAlpha      = CreateConVar("sm_cp_alpha", "1", "Enable/Disable player alpha.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	g_bAlpha          = GetConVarBool(g_hcvarAlpha);
+	HookConVarChange(g_hcvarAlpha, OnSettingChanged);
+	g_hcvarAutoFlash  = CreateConVar("sm_cp_autoflash", "0", "Enable/Disable auto flashbang giver.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	g_bAutoFlash      = GetConVarBool(g_hcvarAutoFlash);
+	HookConVarChange(g_hcvarAutoFlash, OnSettingChanged);
+	if(g_hcvarAutoFlash){
 		HookEvent("player_blind" , Event_flashbang_detonate);
 		HookEvent("weapon_fire" , Event_weapon_fire);
 	}
-	cvarTracer     = CreateConVar("sm_cp_tracer", "1", "Enable/Disable player Tracers.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
-	g_Tracer       = GetConVarBool(cvarTracer);
-	HookConVarChange(cvarTracer, OnSettingChanged);
+	g_hcvarTracer     = CreateConVar("sm_cp_tracer", "0", "Enable/Disable admin Tracers.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	g_bTracer         = GetConVarBool(g_hcvarTracer);
+	HookConVarChange(g_hcvarTracer, OnSettingChanged);
 	
-	cvarScoutLimit = CreateConVar("sm_cp_scoutlimit", "3", "Sets the scout limit for each player. 0 to disable." , FCVAR_PLUGIN, true, 0.0, true, 10.0);
-	g_Scoutlimit   = GetConVarInt(cvarScoutLimit);
-	HookConVarChange(cvarScoutLimit, OnSettingChanged);
+	g_hcvarScoutLimit = CreateConVar("sm_cp_scoutlimit", "3", "Sets the scout limit for each player. 0 to disable.", FCVAR_PLUGIN, true, 0.0, true, 10.0);
+	g_ScoutLimit      = GetConVarInt(g_hcvarScoutLimit);
+	HookConVarChange(g_hcvarScoutLimit, OnSettingChanged);
 	
-	cvarGravity    = CreateConVar("sm_cp_gravity", "1", "Enable/Disable player gravity.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
-	g_Gravity      = GetConVarBool(cvarGravity);
-	HookConVarChange(cvarGravity, OnSettingChanged);
+	g_hcvarGravity    = CreateConVar("sm_cp_gravity", "1", "Enable/Disable player gravity.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	g_bGravity        = GetConVarBool(g_hcvarGravity);
+	HookConVarChange(g_hcvarGravity, OnSettingChanged);
 	
-	cvarHealClient = CreateConVar("sm_cp_healclient", "1", "Enable/Disable healing of damage.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
-	g_HealClient   = GetConVarBool(cvarHealClient);
-	HookConVarChange(cvarHealClient, OnSettingChanged);
-	if(cvarHealClient)
+	g_hcvarHealClient = CreateConVar("sm_cp_healclient", "1", "Enable/Disable healing of damage.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	g_bHealClient     = GetConVarBool(g_hcvarHealClient);
+	HookConVarChange(g_hcvarHealClient, OnSettingChanged);
+	if(g_hcvarHealClient)
 		HookEvent("player_hurt", Event_player_hurt);
 	
-	cvarHintSound = CreateConVar("sm_cp_hintsound", "0", "Enable/Disable playing sound on popup.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
-	g_HintSound   = GetConVarBool(cvarHintSound);
-	HookConVarChange(cvarHintSound, OnSettingChanged);
+	g_hcvarHintSound = CreateConVar("sm_cp_hintsound", "0", "Enable/Disable playing sound on popup.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	g_bHintSound     = GetConVarBool(g_hcvarHintSound);
+	HookConVarChange(g_hcvarHintSound, OnSettingChanged);
 	
-	cvarChatVisible = CreateConVar("sm_cp_chatvisible", "1", "Sets chat output visible to all or not.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
-	g_ChatVisible   = GetConVarBool(cvarChatVisible);
-	HookConVarChange(cvarChatVisible, OnSettingChanged);
+	g_hcvarChatVisible = CreateConVar("sm_cp_chatvisible", "1", "Sets chat output visible to all or not.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	g_bChatVisible     = GetConVarBool(g_hcvarChatVisible);
+	HookConVarChange(g_hcvarChatVisible, OnSettingChanged);
 	
-	cvarRecordSound = CreateConVar("sm_cp_recourdsound", "quake/holyshit.mp3", "Sets the sound that is played on new record.", FCVAR_PLUGIN);
-	GetConVarString(cvarRecordSound, recordSound, 32);
+	g_hcvarRecordSound = CreateConVar("sm_cp_recourdsound", "quake/holyshit.mp3", "Sets the sound that is played on new record.", FCVAR_PLUGIN);
+	GetConVarString(g_hcvarRecordSound, g_szRecordSound, PLATFORM_MAX_PATH);
 	
-	cvarSpeedunit    = CreateConVar("sm_cp_speedunit", "0", "Changes the unit of speed displayed in timerpanel 0=default 1=kmh.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
-	g_Speedunit      = GetConVarBool(cvarSpeedunit);
-	HookConVarChange(cvarSpeedunit, OnSettingChanged);
-	
-	//h_GameConf = LoadGameConfigFile("cPMod.gamedata");
-	//StartPrepSDKCall(SDKCall_Player);
-	//PrepSDKCall_SetFromConf(h_GameConf, SDKConf_Signature, "RoundRespawn");
-	//h_Respawn = EndPrepSDKCall();
-	
-	// stops the plugin if any signature failed, otherwise it would
-	// probably crash the server
-	//if(h_Respawn == INVALID_HANDLE)
-		//SetFailState("[cPMod] Signature Failed. Please contact the author.")
+	g_hcvarSpeedUnit    = CreateConVar("sm_cp_speedunit", "0", "Changes the unit of speed displayed in timerpanel 0=default 1=kmh.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	g_bSpeedUnit        = GetConVarBool(g_hcvarSpeedUnit);
+	HookConVarChange(g_hcvarSpeedUnit, OnSettingChanged);
 	
 	RegConsoleCmd("sm_block", Client_Block, "Toogles blocking");
 	RegConsoleCmd("sm_lowgrav", Client_Lowgrav, "Sets player gravity to low");
@@ -414,6 +399,7 @@ public OnPluginStart(){
 	RegConsoleCmd("sm_help", Client_Help, "Displays the help menu");
 	
 	RegConsoleCmd("sm_record", Client_Record, "Displays your record");
+	RegConsoleCmd("sm_precord", Client_Player_Record, "Displays the record of a given player");
 	RegConsoleCmd("sm_restart", Client_Restart, "Restarts your timer");
 	RegConsoleCmd("sm_stop", Client_Stop, "Stops the timer");
 	RegConsoleCmd("sm_wr", Client_Wr, "Displays the record on the current map");
@@ -433,41 +419,48 @@ public OnPluginStart(){
 //--------------------------//
 public OnMapStart(){
 	//precache some files
-	BeamSpriteFollow = PrecacheModel("materials/sprites/laserbeam.vmt");
-	BeamSpriteRing1 = PrecacheModel("materials/sprites/tp_beam001.vmt");
-	BeamSpriteRing2 = PrecacheModel("materials/sprites/crystal_beam1.vmt");
+	g_BeamSpriteFollow = PrecacheModel("materials/sprites/laserbeam.vmt");
+	g_BeamSpriteRing1 = PrecacheModel("materials/sprites/tp_beam001.vmt");
+	g_BeamSpriteRing2 = PrecacheModel("materials/sprites/crystal_beam1.vmt");
 	PrecacheSound("buttons/blip1.wav", true);
 	
-	PrecacheSound(recordSound, true);
-	AddFileToDownloadsTable(recordSound);
+	//if string not empty
+	if(strlen(g_szRecordSound) != 0){
+		decl String:szDownloadFile[PLATFORM_MAX_PATH];
+		Format(szDownloadFile, PLATFORM_MAX_PATH, "sound/%s", g_szRecordSound);
+		AddFileToDownloadsTable(szDownloadFile);
 	
-	GetCurrentMap(mapname, 32);
+		PrecacheSound(g_szRecordSound, true);
+		g_bRecordSound = true;
+	}
+	
+	GetCurrentMap(g_szMapName, 32);
 	
 	//reset player slots
 	for(new i = 0; i <= MAXPLAYERS; i++){
-		currentcp[i] = 0;
-		wholecp[i] = 0;
-		scouts[i] = 0;
-		runtime[i] = 0;
-		runjumps[i] = 0;
+		g_CurrentCp[i] = 0;
+		g_WholeCp[i] = 0;
+		g_Scouts[i] = 0;
+		g_RunTime[i] = 0;
+		g_RunJumps[i] = 0;
 	}
 	
-	//if g_Timer active
-	if(g_Timer){
+	//if map timer active
+	if(g_bTimer){
 		//query the timer start stop zones
 		db_selectMapStartStop();
 		
 		//select record depending on record type
-		if(g_RecordType == RECORD_TIME)
+		if(g_bRecordType == RECORD_TIME)
 			db_selectWorldRecordTime();
 		else
 			db_selectWorldRecordJump();
 	}
 	
-	//if g_CleanupGuns
-	if(g_CleanupGuns)
+	//if cleanup timer active
+	if(g_bCleanupGuns)
 		//create the cleanup timer
-		CleanTimer = CreateTimer(10.0, ActionCleanTimer, _, TIMER_REPEAT);
+		g_hCleanTimer = CreateTimer(10.0, ActionCleanTimer, _, TIMER_REPEAT);
 }
 
 //------------------------//
@@ -477,21 +470,21 @@ public OnMapEnd(){
 	//for all of the players
 	for(new i = 0; i <= MAXPLAYERS; i++){
 		//if a timer still active: close it!
-		if(g_Timer && MapTimer[i] != INVALID_HANDLE){
-			CloseHandle(MapTimer[i]);
-			MapTimer[i] = INVALID_HANDLE;
+		if(g_bTimer && g_hMapTimer[i] != INVALID_HANDLE){
+			CloseHandle(g_hMapTimer[i]);
+			g_hMapTimer[i] = INVALID_HANDLE;
 		}
 		//if a tracer still active: close it!
-		if(g_Tracer && TraceTimer[i] != INVALID_HANDLE){
-			CloseHandle(TraceTimer[i]);
-			TraceTimer[i] = INVALID_HANDLE;
+		if(g_bTracer && g_hTraceTimer[i] != INVALID_HANDLE){
+			CloseHandle(g_hTraceTimer[i]);
+			g_hTraceTimer[i] = INVALID_HANDLE;
 		}
 	}
 	
 	//also close the cleanup timer
-	if(g_CleanupGuns && CleanTimer != INVALID_HANDLE){
-		CloseHandle(CleanTimer);
-		CleanTimer = INVALID_HANDLE;
+	if(g_bCleanupGuns && g_hCleanTimer != INVALID_HANDLE){
+		CloseHandle(g_hCleanTimer);
+		g_hCleanTimer = INVALID_HANDLE;
 	}
 }
 
@@ -499,110 +492,110 @@ public OnMapEnd(){
 // hook executed on changed settings //
 //-----------------------------------//
 public OnSettingChanged(Handle:convar, const String:oldValue[], const String:newValue[]){
-	if(convar == cvarEnable){
+	if(convar == g_hcvarEnable){
 		if(newValue[0] == '1')
-			g_Enabled = true;
+			g_bEnabled = true;
 		else
-			g_Enabled = false;
-	}else if(convar == cvarTimer){
+			g_bEnabled = false;
+	}else if(convar == g_hcvarTimer){
 		
 		if(newValue[0] == '1'){
-			g_Timer = true;
+			g_bTimer = true;
 			for(new i = 0; i <= MAXPLAYERS; i++){
-				if(MapTimer[i] != INVALID_HANDLE){
-					CloseHandle(MapTimer[i]);
-					MapTimer[i] = INVALID_HANDLE;
+				if(g_hMapTimer[i] != INVALID_HANDLE){
+					CloseHandle(g_hMapTimer[i]);
+					g_hMapTimer[i] = INVALID_HANDLE;
 				}
-				runtime[i] = 0;
-				runjumps[i] = 0;
+				g_RunTime[i] = 0;
+				g_RunJumps[i] = 0;
 			}
 		}else{
-			g_Timer = false;
+			g_bTimer = false;
 			for(new i = 0; i <= MAXPLAYERS; i++){
-				if(MapTimer[i] != INVALID_HANDLE){
-					CloseHandle(MapTimer[i]);
-					MapTimer[i] = INVALID_HANDLE;
+				if(g_hMapTimer[i] != INVALID_HANDLE){
+					CloseHandle(g_hMapTimer[i]);
+					g_hMapTimer[i] = INVALID_HANDLE;
 				}
 			}
 		}
 		
-	}else if(convar == cvarRecordType){
-		g_RecordType = newValue[0];
-	}else if(convar == cvarCleanupGuns){
+	}else if(convar == g_hcvarRecordType){
+		g_bRecordType = newValue[0];
+	}else if(convar == g_hcvarCleanupGuns){
 		if(newValue[0] == '1'){
-			g_CleanupGuns = true;
+			g_bCleanupGuns = true;
 			//seems to be obsolent
-			//CleanTimer = CreateTimer(10.0, ActionCleanTimer, _, TIMER_REPEAT);
+			//g_hCleanTimer = CreateTimer(10.0, ActionCleanTimer, _, TIMER_REPEAT);
 		}else{
-			g_CleanupGuns = false;
-			CloseHandle(CleanTimer);
-			CleanTimer = INVALID_HANDLE;
+			g_bCleanupGuns = false;
+			CloseHandle(g_hCleanTimer);
+			g_hCleanTimer = INVALID_HANDLE;
 		}
-	}else if(convar == cvarRestore){
+	}else if(convar == g_hcvarRestore){
 		if(newValue[0] == '1')
-			g_Restore = true;
+			g_bRestore = true;
 		else
-			g_Restore = false;
-	}else if(convar == cvarNoblock){
+			g_bRestore = false;
+	}else if(convar == g_hcvarNoBlock){
 		if(newValue[0] == '1')
-			g_Noblock = true;
+			g_bNoBlock = true;
 		else
-			g_Noblock = false;
-	}else if(convar == cvarPlayerBlock){
+			g_bNoBlock = false;
+	}else if(convar == g_hcvarPlayerBlock){
 		if(newValue[0] == '1')
-			g_PlayerBlock = true;
+			g_bPlayerBlock = true;
 		else
-			g_PlayerBlock = false;
-	}else if(convar == cvarAlpha){
+			g_bPlayerBlock = false;
+	}else if(convar == g_hcvarAlpha){
 		if(newValue[0] == '1')
-			g_Alpha = true;
+			g_bAlpha = true;
 		else
-			g_Alpha = false;
-	}else if(convar == cvarAutoFlash){
+			g_bAlpha = false;
+	}else if(convar == g_hcvarAutoFlash){
 		if(newValue[0] == '1'){
-			g_AutoFlash = true;
+			g_bAutoFlash = true;
 			HookEvent("player_blind" , Event_flashbang_detonate);
 			HookEvent("weapon_fire" , Event_weapon_fire);
 		}else{
-			g_AutoFlash = false;
+			g_bAutoFlash = false;
 			UnhookEvent("player_blind" , Event_flashbang_detonate);
 			UnhookEvent("weapon_fire" , Event_weapon_fire);
 		}
-	}else if(convar == cvarTracer){
+	}else if(convar == g_hcvarTracer){
 		if(newValue[0] == '1')
-			g_Tracer = true;
+			g_bTracer = true;
 		else
-		g_Tracer = false;
-	}else if(convar == cvarScoutLimit){
-		g_Scoutlimit = newValue[0];
-	}else if(convar == cvarGravity){
+		g_bTracer = false;
+	}else if(convar == g_hcvarScoutLimit){
+		g_ScoutLimit = newValue[0];
+	}else if(convar == g_hcvarGravity){
 		if(newValue[0] == '1')
-			g_Gravity = true;
+			g_bGravity = true;
 		else
-			g_Gravity = false;
-	}else if(convar == cvarHealClient){
+			g_bGravity = false;
+	}else if(convar == g_hcvarHealClient){
 		if(newValue[0] == '1'){
+			g_bHealClient = true;
 			HookEvent("player_hurt", Event_player_hurt);
-			g_HealClient = true;
 		}else{
-			g_HealClient = false;
+			g_bHealClient = false;
 			UnhookEvent("player_hurt", Event_player_hurt, EventHookMode_Post);
 		}
-	}else if(convar == cvarHintSound){
+	}else if(convar == g_hcvarHintSound){
 		if(newValue[0] == '1')
-			g_HintSound = true;
+			g_bHintSound = true;
 		else
-			g_HintSound = false;
-	}else if(convar == cvarChatVisible){
+			g_bHintSound = false;
+	}else if(convar == g_hcvarChatVisible){
 		if(newValue[0] == '1')
-			g_ChatVisible = true;
+			g_bChatVisible = true;
 		else
-			g_ChatVisible = false;
-	}else if(convar == cvarSpeedunit){
+			g_bChatVisible = false;
+	}else if(convar == g_hcvarSpeedUnit){
 		if(newValue[0] == '1')
-			g_Speedunit = true;
+			g_bSpeedUnit = true;
 		else
-			g_Speedunit = false;
+			g_bSpeedUnit = false;
 	}
 }
 
@@ -611,11 +604,11 @@ public OnSettingChanged(Handle:convar, const String:oldValue[], const String:new
 //------------------------------------//
 public OnClientPostAdminCheck(client){
 	//if g_Enabled and client valid
-	if(g_Enabled && IsClientInGame(client) && !IsFakeClient(client)){
+	if(g_bEnabled && IsClientInGame(client) && !IsFakeClient(client)){
 		//reset some settings
-		TraceTimer[client] = INVALID_HANDLE;
-		MapTimer[client] = INVALID_HANDLE;
-		currentcp[client] = -1;
+		g_hTraceTimer[client] = INVALID_HANDLE;
+		g_hMapTimer[client] = INVALID_HANDLE;
+		g_CurrentCp[client] = -1;
 		
 		//select the last checkpoint
 		//(also creates a new entry in the database, if checkpoint not found)
@@ -630,22 +623,22 @@ public OnClientPostAdminCheck(client){
 // executed on player disconnect //
 //-------------------------------//
 public OnClientDisconnect(client){
-	if(g_Enabled){
+	if(g_bEnabled){
 		//cleanup the timer
-		if(g_Timer && MapTimer[client] != INVALID_HANDLE){
-				CloseHandle(MapTimer[client]);
-				MapTimer[client] = INVALID_HANDLE;
+		if(g_bTimer && g_hMapTimer[client] != INVALID_HANDLE){
+				CloseHandle(g_hMapTimer[client]);
+				g_hMapTimer[client] = INVALID_HANDLE;
 		}
 		//cleanup the tracer
-		if(g_Tracer && TraceTimer[client] != INVALID_HANDLE){
-				CloseHandle(TraceTimer[client]);
-				TraceTimer[client] = INVALID_HANDLE;
+		if(g_bTracer && g_hTraceTimer[client] != INVALID_HANDLE){
+				CloseHandle(g_hTraceTimer[client]);
+				g_hTraceTimer[client] = INVALID_HANDLE;
 		}
 		
-		new current = currentcp[client];
-		//if g_Restore and valid checkpoint
-		if(g_Restore && current != -1){
-			//if(playercords[client][current][0] != 0.0 && playercords[client][current][1] != 0.0 && playercords[client][current][0] != 0.0)
+		new current = g_CurrentCp[client];
+		//if g_bRestore and valid checkpoint
+		if(g_bRestore && current != -1){
+			//if(g_fPlayerCords[client][current][0] != 0.0 && g_fPlayerCords[client][current][1] != 0.0 && g_fPlayerCords[client][current][0] != 0.0)
 				//update the checkpoint in the database
 				db_updatePlayerCheckpoint(client, current);
 		}
