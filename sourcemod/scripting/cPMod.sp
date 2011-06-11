@@ -66,6 +66,7 @@ Cmds:
 
 Cvars:
 sm_cp_enabled      - <1|0> Enable/Disable the plugin.
+sm_cp_cleanupguns  - <1|0> Enable/Disable automatic removal of scouts.
 sm_cp_timer        - <1|0> Enable/Disable map based timer.
 sm_cp_restore      - <1|0> Enable/Disable automatic saving of checkpoints to database.
 sm_cp_noblock      - <1|0> Enable/Disable player blocking.
@@ -77,17 +78,23 @@ sm_cp_gravity      - <1|0> Enable/Disable player gravity.
 sm_cp_healclient   - <1|0> Enable/Disable healing of falldamage.
 sm_cp_hintsound    - <1|0> Enable/Disable playing sound on popup.
 sm_cp_chatvisible  - <1|0> Sets chat output visible to all or not.
-sm_cp_RecordSound  - <"quake/holyshit.mp3"> Sets the sound that is played on new record.
+sm_cp_recordsound  - <"quake/holyshit.mp3"> Sets the sound that is played on new record.
 sm_cp_speedunit    - <1|0> Changes the unit of speed displayed in timerpanel [0=default] [1=kmh].
 
 Admin:
-sm_cpadmin            - Displays the admin panel.
-sm_purgeplayer <days> - Purges all old players.
-sm_resetmaps          - Resets all stored map start/end points.
-sm_resetplayers       - Resets all players.
-sm_resetcheckpoints   - Resets all checkpoints.
-sm_resetrecords       - Resets all records.
-	
+sm_cpadmin                             - Displays the admin panel.
+sm_purgeplayer <days>                  - Purges all old players.
+
+sm_dropmaps                            - Drops all stored map start/end points.
+sm_dropplayers                         - Drops all players.
+sm_resetmaptimer <mapname>             - Resets timer for given map.
+
+sm_resetcheckpoints                    - Resets all checkpoints.
+sm_resetmapcheckpoints <mapname>       - Resets all checkpoints for given map.
+sm_resetplayercheckpoints <playername> - Resets all checkpoints for given player.
+sm_resetrecords                        - Drops all records.
+sm_resetmaprecords <mapname>           - Resets all records for given map.
+sm_resetplayerrecords <playername>     - Resets all records for given player.
 
 Versions
 1.0
@@ -169,7 +176,12 @@ Versions
     - Changed all variable names to a single standard
     - Changed start/stop setup boxes visibility to admin only
     - No need to restart the map after setting timer cords
-    - Added quakesound available check
+    - Added quakesound set check
+    - Added sm_resetmaptimer <mapname>
+    - Added sm_resetmapcheckpoints <mapname>
+    - Added sm_resetplayercheckpoints <playername>
+    - Added sm_resetmaprecords <mapname>
+    - Added sm_resetplayerrecords <playername>
     - Added precord <name> <mapname> command
     - Enhanced record command to record <mapname>
 */
@@ -191,7 +203,7 @@ Versions
 // nothing to change over here //
 //-----------------------------//
 //...
-#define VERSION "2.0.5b"
+#define VERSION "2.0.5"
 
 #define YELLOW 0x01
 #define TEAMCOLOR 0x02
@@ -206,6 +218,8 @@ Versions
 
 #define MYSQL 0
 #define SQLITE 1
+
+#define MAX_MAP_LENGTH 32
 
 //-------------------//
 // many variables :) //
@@ -225,7 +239,8 @@ new bool:g_bTimer = false;
 new Handle:g_hcvarRecordType = INVALID_HANDLE;
 new g_bRecordType = RECORD_TIME;
 
-new bool:g_bCordsSet = false;
+new bool:g_bStartCordsSet = false;
+new bool:g_bStopCordsSet = false;
 new Handle:g_hcvarRestore = INVALID_HANDLE;
 new bool:g_bRestore = false;
 
@@ -279,7 +294,7 @@ new bool:g_bBlocking[MAXPLAYERS+1];
 new g_Scouts[MAXPLAYERS+1];
 new g_RunTime[MAXPLAYERS+1];
 new g_RunJumps[MAXPLAYERS+1];
-new String:g_szMapName[32];
+new String:g_szMapName[MAX_MAP_LENGTH];
 
 new g_RecordJumps;
 new g_RecordTime;
@@ -318,7 +333,7 @@ public OnPluginStart(){
 	g_bEnabled      = GetConVarBool(g_hcvarEnable);
 	HookConVarChange(g_hcvarEnable, OnSettingChanged);
 	
-	g_hcvarCleanupGuns  = CreateConVar("sm_cp_cleanupguns", "1", "Enable/Disable automatic removal of weapons.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	g_hcvarCleanupGuns  = CreateConVar("sm_cp_cleanupguns", "1", "Enable/Disable automatic removal of scouts.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
 	HookConVarChange(g_hcvarCleanupGuns, OnSettingChanged);
 	g_bCleanupGuns    = GetConVarBool(g_hcvarCleanupGuns);
 	g_WeaponParent   = FindSendPropOffs("CBaseCombatWeapon", "m_hOwnerEntity");
@@ -378,8 +393,9 @@ public OnPluginStart(){
 	g_bChatVisible     = GetConVarBool(g_hcvarChatVisible);
 	HookConVarChange(g_hcvarChatVisible, OnSettingChanged);
 	
-	g_hcvarRecordSound = CreateConVar("sm_cp_recourdsound", "quake/holyshit.mp3", "Sets the sound that is played on new record.", FCVAR_PLUGIN);
+	g_hcvarRecordSound = CreateConVar("sm_cp_recordsound", "quake/holyshit.mp3", "Sets the sound that is played on new record.", FCVAR_PLUGIN);
 	GetConVarString(g_hcvarRecordSound, g_szRecordSound, PLATFORM_MAX_PATH);
+	HookConVarChange(g_hcvarRecordSound, OnSettingChanged);
 	
 	g_hcvarSpeedUnit    = CreateConVar("sm_cp_speedunit", "0", "Changes the unit of speed displayed in timerpanel 0=default 1=kmh.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
 	g_bSpeedUnit        = GetConVarBool(g_hcvarSpeedUnit);
@@ -405,11 +421,18 @@ public OnPluginStart(){
 	RegConsoleCmd("sm_wr", Client_Wr, "Displays the record on the current map");
 	
 	RegAdminCmd("sm_cpadmin", Admin_CpPanel, ADMIN_LEVEL, "Displays the admin panel.");
-	RegAdminCmd("sm_purgeplayer", Admin_PurgePlayers, ADMIN_LEVEL, "Purges all old players.");
-	RegAdminCmd("sm_resetmaps", Admin_ResetMaps, ADMIN_LEVEL, "Resets all stored map start/end points.");
-	RegAdminCmd("sm_resetplayers", Admin_ResetPlayers, ADMIN_LEVEL, "Resets all players.");
+	RegAdminCmd("sm_purgeplayer", Admin_PurgePlayer, ADMIN_LEVEL, "Purges all old players.");
+	RegAdminCmd("sm_dropmaps", Admin_DropMap, ADMIN_LEVEL, "Drops all stored map start/end points.");
+	RegAdminCmd("sm_dropplayers", Admin_DropPlayer, ADMIN_LEVEL, "Drops all players.");
+	RegAdminCmd("sm_resetmaptimer", Admin_ResetMapTimer, ADMIN_LEVEL, "Resets timer for given map.");
+	
 	RegAdminCmd("sm_resetcheckpoints", Admin_ResetCheckpoints, ADMIN_LEVEL, "Resets all checkpoints.");
-	RegAdminCmd("sm_resetrecords", Admin_ResetRecords, ADMIN_LEVEL, "Resets all records.");
+	RegAdminCmd("sm_resetmapcheckpoints", Admin_ResetMapCheckpoints, ADMIN_LEVEL, "Resets all checkpoints for given map.");
+	RegAdminCmd("sm_resetplayercheckpoints", Admin_ResetPlayerCheckpoints, ADMIN_LEVEL, "Resets all checkpoints for given player.");
+	
+	RegAdminCmd("sm_resetrecords", Admin_ResetRecords, ADMIN_LEVEL, "Drops all records.");
+	RegAdminCmd("sm_resetmaprecords", Admin_ResetMapRecords, ADMIN_LEVEL, "Resets all records for given map.");
+	RegAdminCmd("sm_resetplayerrecords", Admin_ResetPlayerRecords, ADMIN_LEVEL, "Resets all records for given player.");
 	
 	AutoExecConfig(true, "sm_cpmod");
 }
@@ -424,17 +447,9 @@ public OnMapStart(){
 	g_BeamSpriteRing2 = PrecacheModel("materials/sprites/crystal_beam1.vmt");
 	PrecacheSound("buttons/blip1.wav", true);
 	
-	//if string not empty
-	if(strlen(g_szRecordSound) != 0){
-		decl String:szDownloadFile[PLATFORM_MAX_PATH];
-		Format(szDownloadFile, PLATFORM_MAX_PATH, "sound/%s", g_szRecordSound);
-		AddFileToDownloadsTable(szDownloadFile);
+	setupRecordSound();
 	
-		PrecacheSound(g_szRecordSound, true);
-		g_bRecordSound = true;
-	}
-	
-	GetCurrentMap(g_szMapName, 32);
+	GetCurrentMap(g_szMapName, MAX_MAP_LENGTH);
 	
 	//reset player slots
 	for(new i = 0; i <= MAXPLAYERS; i++){
@@ -463,6 +478,19 @@ public OnMapStart(){
 		g_hCleanTimer = CreateTimer(10.0, ActionCleanTimer, _, TIMER_REPEAT);
 }
 
+public setupRecordSound(){
+	//if string not empty
+	if(strlen(g_szRecordSound) != 0){
+		decl String:szDownloadFile[PLATFORM_MAX_PATH];
+		Format(szDownloadFile, PLATFORM_MAX_PATH, "sound/%s", g_szRecordSound);
+		AddFileToDownloadsTable(szDownloadFile);
+	
+		PrecacheSound(g_szRecordSound, true);
+		g_bRecordSound = true;
+	}else
+		g_bRecordSound = false;
+}
+
 //------------------------//
 // executed on end of map //
 //------------------------//
@@ -480,9 +508,13 @@ public OnMapEnd(){
 			g_hTraceTimer[i] = INVALID_HANDLE;
 		}
 	}
+	LogMessage("closed client timers");
 	
 	//also close the cleanup timer
 	if(g_bCleanupGuns && g_hCleanTimer != INVALID_HANDLE){
+	
+		LogMessage("closed cleanup timer");
+		
 		CloseHandle(g_hCleanTimer);
 		g_hCleanTimer = INVALID_HANDLE;
 	}
@@ -591,12 +623,17 @@ public OnSettingChanged(Handle:convar, const String:oldValue[], const String:new
 			g_bChatVisible = true;
 		else
 			g_bChatVisible = false;
+	}else if(convar == g_hcvarRecordSound){
+		strcopy(g_szRecordSound, PLATFORM_MAX_PATH, newValue);
+		setupRecordSound();
 	}else if(convar == g_hcvarSpeedUnit){
 		if(newValue[0] == '1')
 			g_bSpeedUnit = true;
 		else
 			g_bSpeedUnit = false;
 	}
+	//write changes to disk
+	AutoExecConfig(true, "sm_cpmod");
 }
 
 //------------------------------------//
@@ -636,9 +673,8 @@ public OnClientDisconnect(client){
 		}
 		
 		new current = g_CurrentCp[client];
-		//if g_bRestore and valid checkpoint
+		//if checkpoint restoring and valid checkpoint
 		if(g_bRestore && current != -1){
-			//if(g_fPlayerCords[client][current][0] != 0.0 && g_fPlayerCords[client][current][1] != 0.0 && g_fPlayerCords[client][current][0] != 0.0)
 				//update the checkpoint in the database
 				db_updatePlayerCheckpoint(client, current);
 		}

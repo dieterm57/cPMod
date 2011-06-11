@@ -72,10 +72,10 @@
 	}
 	"TimerFinished"
 	{
-		"#format"   "{1:c},{2:c},{3:c},{4:c},{5:c},{6:c},{7:c}"
-		"en"        "{1}[{2}cP{3} Mod] You finished the map! Type {6}!restart{7} to retry."
-		"fr"        "{1}[{2}cP{3} Mod] Vous avez terminé la carte! Type {6}!restart{7} pour réessayer."
-		"de"        "{1}[{2}cP{3} Mod] Du hast die Map geschafft! Schreib {6}!restart{7} um es erneut zu versuchen."
+		"#format"   "{1:c},{2:c},{3:c}"
+		"en"        "{1}[{2}cP{3} Mod] You finished the map!
+		"fr"        "{1}[{2}cP{3} Mod] Vous avez terminé la carte!"
+		"de"        "{1}[{2}cP{3} Mod] Du hast die Map geschafft!"
 	}
 	"PlayerRank"
 	{

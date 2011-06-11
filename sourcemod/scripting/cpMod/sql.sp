@@ -60,13 +60,20 @@ new String:sql_selectJumpWorldRecord[] = "SELECT name, jumps FROM player WHERE m
 new String:sqlite_purgePlayers[] = "DELETE FROM players WHERE date < datetime('now', '-%i days');";
 new String:sql_purgePlayers[] = "DELETE FROM players WHERE date < DATE_SUB(CURDATE(),INTERVAL %i DAY);";
 
-new String:sqlite_resetMap[] = "DROP TABLE map; VACCUM";
-new String:sql_resetMap[] = "DROP TABLE map;";
-new String:sqlite_resetPlayer[] = "DROP TABLE player; VACCUM";
-new String:sql_resetPlayer[] = "DROP TABLE player;";
 
-new String:sql_resetPlayerCheckpoint[] = "UPDATE player SET cords = '0:0:0', angle = '0:0:0';";
-new String:sql_resetRecord[] = "UPDATE player SET jumps = '-1', runtime = '-1';";
+new String:sqlite_dropMap[] = "DROP TABLE map; VACCUM";
+new String:sql_dropMap[] = "DROP TABLE map;";
+new String:sqlite_dropPlayer[] = "DROP TABLE player; VACCUM";
+new String:sql_dropPlayer[] = "DROP TABLE player;";
+new String:sql_resetMapTimer[] = "UPDATE map SET start0 = '0:0:0', start1 = '0:0:0', end0 = '0:0:0', end1 = '0:0:0' WHERE mapname = '%s';"; 
+
+new String:sql_resetCheckpoints[] = "UPDATE player SET cords = '0:0:0', angle = '0:0:0';";
+new String:sql_resetMapCheckpoints[] = "UPDATE player SET cords = '0:0:0', angle = '0:0:0' WHERE mapname = '%s';";
+new String:sql_resetPlayerCheckpoints[] = "UPDATE player SET cords = '0:0:0', angle = '0:0:0' WHERE name LIKE '%s';";
+
+new String:sql_resetRecords[] = "UPDATE player SET jumps = '-1', runtime = '-1';";
+new String:sql_resetMapRecords[] = "UPDATE player SET jumps = '-1', runtime = '-1' WHERE mapname = '%s';";
+new String:sql_resetPlayerRecords[] = "UPDATE player SET jumps = '-1', runtime = '-1' WHERE name LIKE '%s';";
 
 
 //-------------------------//
@@ -191,12 +198,12 @@ public db_updatePlayerCheckpoint(client, current){
 //--------------------//
 // view record method //
 //---------------------//
-public db_viewRecord(client, String:mname[32]){
+public db_viewRecord(client, String:szMapName[MAX_MAP_LENGTH]){
 	decl String:szQuery[255];
 	decl String:szSteamId[32];
 	GetClientAuthString(client, szSteamId, 32);
 	
-	Format(szQuery, 255, sql_selectRecord, szSteamId, mname);
+	Format(szQuery, 255, sql_selectRecord, szSteamId, szMapName);
 	
 	SQL_TQuery(g_hDb, SQL_ViewRecordCallback, szQuery, client);
 }
@@ -265,7 +272,7 @@ public RecordPanelHandler(Handle:menu, MenuAction:action, param1, param2){
 //---------------------------//
 // view player record method //
 //---------------------------//
-public db_viewPlayerRecord(client, String:szPlayerName[MAX_NAME_LENGTH], String:szMapName[32]){
+public db_viewPlayerRecord(client, String:szPlayerName[MAX_NAME_LENGTH], String:szMapName[MAX_MAP_LENGTH]){
 	decl String:szQuery[255];
 	
 	Format(szQuery, 255, sql_selectPlayerRecord, szPlayerName, szMapName);
@@ -337,7 +344,7 @@ public PlayerRecordPanelHandler(Handle:menu, MenuAction:action, param1, param2){
 //-------------------------//
 // view player rank method //
 //-------------------------//
-public db_viewPlayerRank(client, record, String:szMapName[32]){
+public db_viewPlayerRank(client, record, String:szMapName[MAX_MAP_LENGTH]){
 	decl String:szQuery[255];
 	decl String:szSteamId[32];
 	GetClientAuthString(client, szSteamId, 32);
@@ -472,12 +479,12 @@ public db_selectTimeWorldRecord(client){
 	
 	Format(szQuery, 255, sql_selectTimeWorldRecord, g_szMapName);
 	
-	SQL_TQuery(g_hDb, SQL_SelectTimeWorldRecordCallback, szQuery, client);
+	SQL_TQuery(g_hDb, SQL_SelectTimeWRCallback, szQuery, client);
 }
 //----------//
 // callback //
 //----------//
-public SQL_SelectTimeWorldRecordCallback(Handle:owner, Handle:hndl, const String:error[], any:data){
+public SQL_SelectTimeWRCallback(Handle:owner, Handle:hndl, const String:error[], any:data){
 	if(hndl == INVALID_HANDLE)
 		LogError("[cP Mod] Error loading toprecordtime (%s)", error);
 	
@@ -527,12 +534,12 @@ public db_selectJumpWorldRecord(client){
 	
 	Format(szQuery, 255, sql_selectJumpWorldRecord, g_szMapName);
 	
-	SQL_TQuery(g_hDb, SQL_SelectJumpWorldRecordCallback, szQuery, client);
+	SQL_TQuery(g_hDb, SQL_SelectJumpWRCallback, szQuery, client);
 }
 //----------//
 // callback //
 //----------//
-public SQL_SelectJumpWorldRecordCallback(Handle:owner, Handle:hndl, const String:error[], any:data){
+public SQL_SelectJumpWRCallback(Handle:owner, Handle:hndl, const String:error[], any:data){
 	if(hndl == INVALID_HANDLE)
 		LogError("[cP Mod] Error loading toprecordjump (%s)", error);
 	
@@ -604,7 +611,8 @@ public SQL_SelectMapStartStopCallback(Handle:owner, Handle:hndl, const String:er
 		
 		//if not a valid result
 		if(StrEqual(szStart0_cords, "0:0:0") || StrEqual(szStart1_cords, "0:0:0") || StrEqual(szEnd0_cords, "0:0:0") || StrEqual(szEnd1_cords, "0:0:0")){
-			g_bCordsSet = false;
+			g_bStartCordsSet = false;
+			g_bStopCordsSet = false;
 		}else{ //valid
 			//parse the result into string buffers
 			decl String:szCBuff[3][32]
@@ -617,6 +625,7 @@ public SQL_SelectMapStartStopCallback(Handle:owner, Handle:hndl, const String:er
 			g_fMapTimer_start1_cords[0] = StringToFloat(szCBuff[0]);
 			g_fMapTimer_start1_cords[1] = StringToFloat(szCBuff[1]);
 			g_fMapTimer_start1_cords[2] = StringToFloat(szCBuff[2]);
+			g_bStartCordsSet = true;
 			
 			ExplodeString(szEnd0_cords, ":", szCBuff, 3, 32);
 			g_fMapTimer_end0_cords[0] = StringToFloat(szCBuff[0]);
@@ -627,7 +636,7 @@ public SQL_SelectMapStartStopCallback(Handle:owner, Handle:hndl, const String:er
 			g_fMapTimer_end1_cords[0] = StringToFloat(szCBuff[0]);
 			g_fMapTimer_end1_cords[1] = StringToFloat(szCBuff[1]);
 			g_fMapTimer_end1_cords[2] = StringToFloat(szCBuff[2]);
-			g_bCordsSet = true;
+			g_bStopCordsSet = true;
 		}
 	}else //no map start stop area, so insert the map
 		db_insertMap();
@@ -662,11 +671,9 @@ public SQL_SelectCheckpointCallback(Handle:owner, Handle:hndl, const String:erro
 		SQL_FetchString(hndl, 0, szCords, 32);
 		SQL_FetchString(hndl, 1, szAngles, 32);
 		
-		//if(StrEqual(szCords, "0:0:0") || StrEqual(szCords, "0.000000:0.000000:0.000000") || StrEqual(szAngles, "0:0:0") || StrEqual(szAngles, "0.000000:0.000000:0.000000")){
-		
 		//if checkpoint not valid
 		if(StrEqual(szCords, "0:0:0") || StrEqual(szAngles, "0:0:0")){
-			g_CurrentCp[client] = 0;
+			g_CurrentCp[client] = -1;
 			g_WholeCp[client] = 0;
 		}else{ //valid
 			//parse the result into string buffers
@@ -764,65 +771,139 @@ public db_purgePlayer(client, String:szdays[]){
 	PrintToConsole(client, "PlayerDatabase purged.");
 	LogMessage("PlayerDatabase purged.");
 }
+
+//-----------------//
+// drop map method //
 //------------------//
-// reset map method //
-//------------------//
-public db_resetMap(client){
+public db_dropMap(client){
 	SQL_LockDatabase(g_hDb);
 	
 	if(g_DbType == MYSQL)
-		SQL_FastQuery(g_hDb, sql_resetMap);
+		SQL_FastQuery(g_hDb, sql_dropMap);
 	else
-		SQL_FastQuery(g_hDb, sqlite_resetMap);
+		SQL_FastQuery(g_hDb, sqlite_dropMap);
 	
 	SQL_UnlockDatabase(g_hDb);
 	
-	PrintToConsole(client, "MapDatabase cleared. Please restart the server!");
-	LogMessage("MapDatabase cleared.");
+	PrintToConsole(client, "MapTable dropped. Please restart the server!");
+	LogMessage("MapTable dropped.");
 }
-//---------------------//
-// reset player method //
-//---------------------//
-public db_resetPlayer(client){
+//--------------------//
+// drop player method //
+//--------------------//
+public db_dropPlayer(client){
 	SQL_LockDatabase(g_hDb);
 	
 	if(g_DbType == MYSQL)
-		SQL_FastQuery(g_hDb, sql_resetPlayer);
+		SQL_FastQuery(g_hDb, sql_dropPlayer);
 	else
-		SQL_FastQuery(g_hDb, sqlite_resetPlayer);
+		SQL_FastQuery(g_hDb, sqlite_dropPlayer);
 	
 	SQL_UnlockDatabase(g_hDb);
 	
-	PrintToConsole(client, "PlayerDatabase cleared. Please restart the server!");
-	LogMessage("PlayerDatabase cleared.");
+	PrintToConsole(client, "PlayerTable dropped. Please restart the server!");
+	LogMessage("PlayerTable dropped.");
 }
-//-------------------------//
-// reset checkpoint method //
-//-------------------------//
-public db_resetCheckpoint(client){
+//--------------------//
+// reset timer method //
+//--------------------//
+public db_resetMapTimer(client, String:szMapName[MAX_MAP_LENGTH]){
+	decl String:szQuery[255];
+	
+	Format(szQuery, 255, sql_resetMapTimer, g_szMapName);
+	
 	SQL_LockDatabase(g_hDb);
-	
-	SQL_FastQuery(g_hDb, sql_resetPlayerCheckpoint);
-	
-	SQL_UnlockDatabase(g_hDb);
-  
-	PrintToConsole(client, "CheckpointDatabase cleared. Please restart the server!");
-	LogMessage("CheckpointDatabase cleared.");
-}
-//---------------------//
-// reset record method //
-//---------------------//
-public db_resetRecord(client){
-	SQL_LockDatabase(g_hDb);
-	
-	SQL_FastQuery(g_hDb, sql_resetRecord);
-	
+	SQL_FastQuery(g_hDb, szQuery);
 	SQL_UnlockDatabase(g_hDb);
 	
-	PrintToConsole(client, "RecordDatabase cleared. Please restart the server!");
-	LogMessage("RecordDatabase cleared.");
+	PrintToConsole(client, "Maptimer resettet.");
+	LogMessage("Maptimer resettet.");
 }
 
+
+//--------------------------//
+// reset checkpoints method //
+//--------------------------//
+public db_resetCheckpoints(client){
+	SQL_LockDatabase(g_hDb);
+	SQL_FastQuery(g_hDb, sql_resetCheckpoints);
+	SQL_UnlockDatabase(g_hDb);
+	
+	PrintToConsole(client, "CheckpointTable cleared.");
+	LogMessage("CheckpointTable cleared.");
+}
+//------------------------------//
+// reset map checkpoints method //
+//------------------------------//
+public db_resetMapCheckpoints(client, String:szMapName[MAX_MAP_LENGTH]){
+	decl String:szQuery[255];
+	
+	Format(szQuery, 255, sql_resetMapCheckpoints, szMapName);
+	
+	SQL_LockDatabase(g_hDb);
+	SQL_FastQuery(g_hDb, szQuery);
+	SQL_UnlockDatabase(g_hDb);
+	
+	PrintToConsole(client, "MapCheckpointTable cleared.");
+	LogMessage("MapCheckpointTable cleared.");
+}
+//-----------------------------//
+// reset player checkpoints method //
+//-----------------------------//
+public db_resetPlayerCheckpoints(client, String:szPlayerName[MAX_NAME_LENGTH]){
+	decl String:szQuery[255];
+	
+	Format(szQuery, 255, sql_resetPlayerCheckpoints, szPlayerName);
+	
+	SQL_LockDatabase(g_hDb);
+	SQL_FastQuery(g_hDb, szQuery);
+	SQL_UnlockDatabase(g_hDb);
+	
+	PrintToConsole(client, "PlayerCheckpointsTable cleared.");
+	LogMessage("PlayerCheckpointsTable cleared.");
+}
+
+//----------------------//
+// reset records method //
+//----------------------//
+public db_resetRecords(client){
+	SQL_LockDatabase(g_hDb);
+	SQL_FastQuery(g_hDb, sql_resetRecords);
+	SQL_UnlockDatabase(g_hDb);
+	
+	PrintToConsole(client, "RecordTable cleared.");
+	LogMessage("RecordTable cleared.");
+}
+//--------------------------//
+// reset map records method //
+//--------------------------//
+public db_resetMapRecords(client, String:szMapName[MAX_MAP_LENGTH]){
+	decl String:szQuery[255];
+	
+	Format(szQuery, 255, sql_resetMapRecords, szMapName);
+	
+	SQL_LockDatabase(g_hDb);
+	SQL_FastQuery(g_hDb, szQuery);
+	SQL_UnlockDatabase(g_hDb);
+	
+	PrintToConsole(client, "MapRecordTable cleared.");
+	LogMessage("MapRecordTable cleared.");
+}
+//-----------------------------//
+// reset player records method //
+//-----------------------------//
+public db_resetPlayerRecords(client, String:szPlayerName[MAX_NAME_LENGTH]){
+	decl String:szQuery[255];
+	
+	Format(szQuery, 255, sql_resetPlayerRecords, szPlayerName);
+	
+	SQL_LockDatabase(g_hDb);
+	SQL_FastQuery(g_hDb, szQuery);
+	SQL_UnlockDatabase(g_hDb);
+	
+	PrintToConsole(client, "PlayerRecordTable cleared.");
+	LogMessage("PlayerRecordTable cleared.");
+}
 
 //-----------------//
 // global callback //

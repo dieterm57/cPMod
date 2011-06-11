@@ -32,12 +32,11 @@
 // admin cp command hook //
 //-----------------------//
 public Action:Admin_CpPanel(client, args){
+	//if someone else setting up a timer
 	if(g_hcpSetterTimer == INVALID_HANDLE)
 		CpAdminPanel(client);
-	else{
+	else
 		PrintToChat(client, "%t", "CpPanelInAccess", YELLOW,LIGHTGREEN,YELLOW);
-		PrintToChat(client, "%i", g_hcpSetterTimer);
-	}
 	
 	return Plugin_Handled;
 }
@@ -58,20 +57,24 @@ public CpAdminPanel(client){
 // handler //
 //---------//
 public CpAdminPanelHandler(Handle:menu, MenuAction:action, param1, param2){
-	if(action == MenuAction_Select){
-		//depending on item selected
-		if(param2 == 0){ //start
-			GetClientAbsOrigin(param1,g_fCpSetBCords);
-			g_hcpSetterTimer = CreateTimer(0.1, CpSetTimer, param1, TIMER_REPEAT);
-			CpAdminPanelStart(param1);
-		}else{ //stop
-			GetClientAbsOrigin(param1,g_fCpSetBCords);
-			g_hcpSetterTimer = CreateTimer(0.1, CpSetTimer, param1, TIMER_REPEAT);
-			CpAdminPanelStop(param1);
+	//if someone else setting up a timer
+	if(g_hcpSetterTimer == INVALID_HANDLE){
+		if(action == MenuAction_Select){
+			//depending on item selected
+			if(param2 == 0){ //start
+				GetClientAbsOrigin(param1,g_fCpSetBCords);
+				g_hcpSetterTimer = CreateTimer(0.1, CpSetTimer, param1, TIMER_REPEAT);
+				CpAdminPanelStart(param1);
+			}else{ //stop
+				GetClientAbsOrigin(param1,g_fCpSetBCords);
+				g_hcpSetterTimer = CreateTimer(0.1, CpSetTimer, param1, TIMER_REPEAT);
+				CpAdminPanelStop(param1);
+			}
+		}else if(action == MenuAction_End){
+			CloseHandle(menu);
 		}
-	}else if(action == MenuAction_End){
-		CloseHandle(menu);
-	}
+	}else
+		PrintToChat(param1, "%t", "CpPanelInAccess", YELLOW,LIGHTGREEN,YELLOW);
 }
 
 //--------------------------//
@@ -185,23 +188,22 @@ public Action:CpSetTimer(Handle:timer, any:client){
 		fRightTopBack[2] = g_fCpSetBCords[2]+100;
 		
 		//create the box
-		TE_SetupBeamPoints(fLeftBottomFront,fRightBottomFront,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToAll();
-		TE_SetupBeamPoints(fLeftBottomFront,fLeftBottomBack,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToAll();
-		TE_SetupBeamPoints(fLeftBottomFront,lefttopfront,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToAll();
+		TE_SetupBeamPoints(fLeftBottomFront,fRightBottomFront,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToClient(client, 0.0);
+		TE_SetupBeamPoints(fLeftBottomFront,fLeftBottomBack,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToClient(client, 0.0);
+		TE_SetupBeamPoints(fLeftBottomFront,lefttopfront,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToClient(client, 0.0);
 		
-		TE_SetupBeamPoints(lefttopfront,righttopfront,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToAll();
-		TE_SetupBeamPoints(lefttopfront,fLeftTopBack,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToAll();
-		TE_SetupBeamPoints(fRightTopBack,fLeftTopBack,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToAll();
-		TE_SetupBeamPoints(fRightTopBack,righttopfront,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToAll();
+		TE_SetupBeamPoints(lefttopfront,righttopfront,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToClient(client, 0.0);
+		TE_SetupBeamPoints(lefttopfront,fLeftTopBack,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToClient(client, 0.0);
+		TE_SetupBeamPoints(fRightTopBack,fLeftTopBack,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToClient(client, 0.0);
+		TE_SetupBeamPoints(fRightTopBack,righttopfront,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToClient(client, 0.0);
 		
-		TE_SetupBeamPoints(fRightBottomBack,fLeftBottomBack,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToAll();
-		TE_SetupBeamPoints(fRightBottomBack,fRightBottomFront,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToAll();
-		TE_SetupBeamPoints(fRightBottomBack,fRightTopBack,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToAll();
+		TE_SetupBeamPoints(fRightBottomBack,fLeftBottomBack,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToClient(client, 0.0);
+		TE_SetupBeamPoints(fRightBottomBack,fRightBottomFront,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToClient(client, 0.0);
+		TE_SetupBeamPoints(fRightBottomBack,fRightTopBack,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToClient(client, 0.0);
 		
-		TE_SetupBeamPoints(fRightBottomFront,righttopfront,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToAll();
-		TE_SetupBeamPoints(fLeftBottomBack,fLeftTopBack,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToAll();
-		
-		TE_SendToClient(client, 0.0);
+		TE_SetupBeamPoints(fRightBottomFront,righttopfront,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToClient(client, 0.0);
+		TE_SetupBeamPoints(fLeftBottomBack,fLeftTopBack,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToClient(client, 0.0);
+
 	}else{ //no valid player
 		//close the box update timer if not closed before
 		if(g_hcpSetterTimer != INVALID_HANDLE){
@@ -222,17 +224,31 @@ public SetTimerCords(client, pos){
 	//update global variables if timer enabled
 	if(g_bTimer){
 		if(pos == POS_START){
+			//add a little offset
+			g_fCpSetBCords[2] -= 50;
+			g_fCpSetECords[2] += 50;
 			g_fMapTimer_start0_cords = g_fCpSetBCords;
 			g_fMapTimer_start1_cords = g_fCpSetECords;
+			
+			//set start coordinates set to true
+			g_bStartCordsSet = true;
 		}else{
+			//add a little offset
+			g_fCpSetBCords[2] -= 50;
+			g_fCpSetECords[2] += 50;
 			g_fMapTimer_end0_cords = g_fCpSetBCords;
 			g_fMapTimer_end1_cords = g_fCpSetECords;
+			
+			
+			//set stop coordinates set to true
+			g_bStopCordsSet = true;
 		}
+		
 	}
 	
 	//format the coordinates in string buffers
-	Format(szBCords, 38, "%f:%f:%f",g_fCpSetBCords[0],g_fCpSetBCords[1],g_fCpSetBCords[2]-50);
-	Format(szECords, 38, "%f:%f:%f",g_fCpSetECords[0],g_fCpSetECords[1],g_fCpSetECords[2]+50);
+	Format(szBCords, 38, "%f:%f:%f",g_fCpSetBCords[0],g_fCpSetBCords[1],g_fCpSetBCords[2]);
+	Format(szECords, 38, "%f:%f:%f",g_fCpSetECords[0],g_fCpSetECords[1],g_fCpSetECords[2]);
 	
 	//update the coordinates in the database
 	db_updateMapStartStop(client, szBCords, szECords, pos);
@@ -250,9 +266,9 @@ public SetTimerCords(client, pos){
 //--------------------------//
 // admin purge players hook //
 //--------------------------//
-public Action:Admin_PurgePlayers(client, args){
-	//if not enough arguments
-	if (args < 2){
+public Action:Admin_PurgePlayer(client, args){
+	//if not correct arguments
+	if (args != 1){
 		ReplyToCommand(client, "[SM] Usage: sm_purgeplayer <days>");
 		return Plugin_Handled;
 	}
@@ -264,19 +280,36 @@ public Action:Admin_PurgePlayers(client, args){
 	return Plugin_Handled;
 }
 
-//-----------------------//
-// admin reset maps hook //
-//-----------------------//
-public Action:Admin_ResetMaps(client, args){
-	db_resetMap(client);
+//----------------------//
+// admin drop maps hook //
+//----------------------//
+public Action:Admin_DropMap(client, args){
+	db_dropMap(client);
 	return Plugin_Handled;
 }
 
-//--------------------------//
-// admin reset players hook //
-//--------------------------//
-public Action:Admin_ResetPlayers(client, args){
-	db_resetPlayer(client);
+//-------------------------//
+// admin drop players hook //
+//-------------------------//
+public Action:Admin_DropPlayer(client, args){
+	db_dropPlayer(client);
+	return Plugin_Handled;
+}
+
+//------------------------//
+// admin reset timer hook //
+//------------------------//
+public Action:Admin_ResetMapTimer(client, args){
+	//if not correct arguments
+	if (args != 1){
+		ReplyToCommand(client, "[SM] Usage: sm_resetmaptimer <mapname>");
+		return Plugin_Handled;
+	}
+	
+	//create the database query
+	decl String:szMapName[MAX_MAP_LENGTH];
+	GetCmdArg(1, szMapName, MAX_MAP_LENGTH);
+	db_resetMapTimer(client, szMapName);
 	return Plugin_Handled;
 }
 
@@ -284,7 +317,43 @@ public Action:Admin_ResetPlayers(client, args){
 // admin reset checkpoints hook //
 //------------------------------//
 public Action:Admin_ResetCheckpoints(client, args){
-	db_resetCheckpoint(client);
+	db_resetCheckpoints(client);
+	return Plugin_Handled;
+}
+//----------------------------------//
+// admin reset map checkpoints hook //
+//----------------------------------//
+public Action:Admin_ResetMapCheckpoints(client, args){
+	//if not correct arguments
+	if (args != 1){
+		ReplyToCommand(client, "[SM] Usage: sm_resetmapcheckpoints <mapname>");
+		return Plugin_Handled;
+	}
+	
+	//create the database query
+	decl String:szMapName[MAX_MAP_LENGTH];
+	GetCmdArg(1, szMapName, MAX_MAP_LENGTH);
+	db_resetMapCheckpoints(client, szMapName);
+	
+	g_bStartCordsSet = false;
+	g_bStopCordsSet = false;
+	
+	return Plugin_Handled;
+}
+//-------------------------------------//
+// admin reset player checkpoints hook //
+//-------------------------------------//
+public Action:Admin_ResetPlayerCheckpoints(client, args){
+	//if not correct arguments
+	if (args != 1){
+		ReplyToCommand(client, "[SM] Usage: sm_resetplayercheckpoints <playername>");
+		return Plugin_Handled;
+	}
+	
+	//create the database query
+	decl String:szPlayerName[MAX_NAME_LENGTH];
+	GetCmdArg(1, szPlayerName, MAX_NAME_LENGTH);
+	db_resetPlayerCheckpoints(client, szPlayerName);
 	return Plugin_Handled;
 }
 
@@ -292,6 +361,38 @@ public Action:Admin_ResetCheckpoints(client, args){
 // admin reset records hook //
 //--------------------------//
 public Action:Admin_ResetRecords(client, args){
-	db_resetRecord(client);
+	db_resetRecords(client);
+	return Plugin_Handled;
+}
+//------------------------------//
+// admin reset map records hook //
+//------------------------------//
+public Action:Admin_ResetMapRecords(client, args){
+	//if not correct arguments
+	if (args != 1){
+		ReplyToCommand(client, "[SM] Usage: sm_resetmaprecords <mapname>");
+		return Plugin_Handled;
+	}
+	
+	//create the database query
+	decl String:szMapName[MAX_MAP_LENGTH];
+	GetCmdArg(1, szMapName, MAX_MAP_LENGTH);
+	db_resetMapRecords(client, szMapName);
+	return Plugin_Handled;
+}
+//---------------------------------//
+// admin reset player records hook //
+//---------------------------------//
+public Action:Admin_ResetPlayerRecords(client, args){
+	//if not correct arguments
+	if (args != 1){
+		ReplyToCommand(client, "[SM] Usage: sm_resetplayerrecords <playername>");
+		return Plugin_Handled;
+	}
+	
+	//create the database query
+	decl String:szPlayerName[MAX_NAME_LENGTH];
+	GetCmdArg(1, szPlayerName, MAX_NAME_LENGTH);
+	db_resetPlayerRecords(client, szPlayerName);
 	return Plugin_Handled;
 }

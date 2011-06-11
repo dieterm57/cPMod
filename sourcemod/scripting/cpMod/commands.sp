@@ -85,7 +85,7 @@ public Action:Client_Help(client, args){
 //------------------------------------//
 public Action:Client_Record(client, args){
 	if(args == 1){
-		decl String:szMapName[32];
+		decl String:szMapName[MAX_MAP_LENGTH];
 		GetCmdArg(1, szMapName, MAX_NAME_LENGTH);
 		
 		RecordPanel(client, szMapName);
@@ -106,7 +106,7 @@ public Action:Client_Player_Record(client, args){
 		PlayerRecordPanel(client, szPlayerName, g_szMapName);
 	}else if(args == 2){
 		decl String:szPlayerName[MAX_NAME_LENGTH];
-		decl String:szMapName[32];
+		decl String:szMapName[MAX_MAP_LENGTH];
 		GetCmdArg(1, szPlayerName, MAX_NAME_LENGTH);
 		GetCmdArg(2, szMapName, MAX_NAME_LENGTH);
 		
@@ -131,14 +131,14 @@ public Action:Client_Wr(client, args){
 //---------------------//
 // record panel method //
 //---------------------//
-public RecordPanel(client, String:szPlayerName[32]){
+public RecordPanel(client, String:szPlayerName[MAX_MAP_LENGTH]){
 	db_viewRecord(client, szPlayerName);
 }
 
 //----------------------------//
 // player record panel method //
 //----------------------------//
-public PlayerRecordPanel(client, String:szPlayerName[MAX_NAME_LENGTH], String:szMapName[32]){
+public PlayerRecordPanel(client, String:szPlayerName[MAX_NAME_LENGTH], String:szMapName[MAX_MAP_LENGTH]){
   db_viewPlayerRecord(client, szPlayerName, szMapName);
 }
 
@@ -186,12 +186,13 @@ public RestartTimer(client){
 		
 	//if timer enabled
 	if(g_bTimer){
+		g_bRacing[client] = false;
+		
 		//if g_hMapTimer running
 		if(g_hMapTimer[client] != INVALID_HANDLE){
 			//stop it
 			CloseHandle(g_hMapTimer[client]);
 			g_hMapTimer[client] = INVALID_HANDLE;
-			g_bRacing[client] = false;
 		}
 		
 		//@deprecated
