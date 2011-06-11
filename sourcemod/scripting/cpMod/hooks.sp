@@ -69,16 +69,16 @@ public Action:Event_player_spawn(Handle:event, const String:name[], bool:dontBro
 			g_hTraceTimer[client] = CreateTimer(1.0, ActionTraceTimer, client, TIMER_REPEAT);
 		
 		//if the timer is enabled end the cords are not set
-		if(g_bTimer && !g_bCordsSet){
+		if(g_bTimer && !g_bStartCordsSet && !g_bStopCordsSet){
 			//give him the chance to set them
 			PrintToChat(client, "%t", "CordsNotSet", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
 			CpAdminPanel(client);
 		}
 	}
 }
-//--------------------//
+//------------------//
 // player hurt hook //
-//--------------------//
+//------------------//
 public Action:Event_player_hurt(Handle:event, const String:name[], bool:dontBroadcast){
 	new client = GetClientOfUserId(GetEventInt(event, "userid"));
 	new damage = GetEventInt(event, "damage");
@@ -105,11 +105,11 @@ public Action:Event_flashbang_detonate(Handle:event,const String:name[],bool:don
 // weapon fire hook //
 //------------------//
 public Action:Event_weapon_fire(Handle:event,const String:name[],bool:dontBroadcast){
-	decl String:weaponname[32];
-	GetEventString(event, "weapon", weaponname, 200);
+	decl String:szWeaponName[32];
+	GetEventString(event, "weapon", szWeaponName, 32);
 	new client = GetClientOfUserId(GetEventInt(event,"userid"));
 	//if the fired weapon is a flashbang
-	if(StrEqual(weaponname,"flashbang"))
+	if(StrEqual(szWeaponName,"flashbang"))
 		//give the player a flashbang back
 		GivePlayerItem(client, "weapon_flashbang");
 }
@@ -123,7 +123,9 @@ public Action:ActionCleanTimer(Handle:timer, any:client){
 	for(new i=GetMaxClients(); i<maxent; i++){
 		if(IsValidEdict(i) && IsValidEntity(i)){
 			GetEdictClassname(i, name, sizeof(name));
-			if((StrContains(name, "weapon_") != -1 || StrContains(name, "item_") != -1 ) && GetEntDataEnt2(i, g_WeaponParent) == -1)
+			//if((StrContains(name, "weapon_") != -1 || StrContains(name, "item_") != -1 ) && GetEntDataEnt2(i, g_WeaponParent) == -1)
+			if((StrContains(name, "weapon_scout") != -1 || StrContains(name, "item_") != -1 ) && GetEntDataEnt2(i, g_WeaponParent) == -1)
+				//segmentation error if map end??
 				RemoveEdict(i);
 		}
 	}
@@ -140,15 +142,6 @@ public Action:ActionTraceTimer(Handle:timer, any:client){
 	}else //not valid
 		return Plugin_Stop;
 }
-
-//----------------------//
-// restart timer action //
-//----------------------//
-//@deprecated
-public Action:ActionRestartTimer(Handle:timer, any:client){
-	g_hMapTimer[client] = CreateTimer(1.0, Action_MapTimer, client, TIMER_REPEAT);
-}
-
 
 //--------------------------//
 // player inside box method //
@@ -204,7 +197,7 @@ public IsInsideBox(Float:fPCords[3], pos){
 	
 	if(bX&&bY&&bZ)
 		return true;
-
+	
 	return false;
 }
 
@@ -212,8 +205,8 @@ public IsInsideBox(Float:fPCords[3], pos){
 // map timer action //
 //------------------//
 public Action:Action_MapTimer(Handle:timer, any:client){
-	//if this is a valid player
-	if(client != 0 && IsClientInGame(client) && IsPlayerAlive(client)){
+	//if this is a valid player and timer start & stop are set
+	if(client != 0 && IsClientInGame(client) && IsPlayerAlive(client) && g_bStartCordsSet && g_bStopCordsSet){
 		decl Float:fPCords[3];
 		GetClientAbsOrigin(client,fPCords);
 		decl String:szTime[16];
@@ -235,7 +228,7 @@ public Action:Action_MapTimer(Handle:timer, any:client){
 				//set variables for racing again
 				g_RunTime[client] = 1;
 				g_RunJumps[client] = 0;
-				PrintToChat(client, "%t", "TimerRestarted", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
+				//PrintToChat(client, "%t", "TimerRestarted", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
 			}else{ //racing
 				//calculate time, jumps and speed
 				new minutes = g_RunTime[client]/60;
@@ -266,6 +259,7 @@ public Action:Action_MapTimer(Handle:timer, any:client){
 					//depending on recordtype
 					if(g_bRecordType == RECORD_TIME){
 						//check for new time record
+						
 						if(g_RunTime[client] < g_RecordTime){
 							decl String:szName[MAX_NAME_LENGTH];
 							GetClientName(client, szName, MAX_NAME_LENGTH);
@@ -284,13 +278,13 @@ public Action:Action_MapTimer(Handle:timer, any:client){
 								
 								//if a record sound is set
 								if(g_bRecordSound)
-									EmitSoundToClient(client, g_szRecordSound, client);
+									EmitSoundToClient(client, g_szRecordSound);
 							}
 							
 							//update the temporary variables
 							g_RecordTime = g_RunTime[client];
 						}else //no new record
-							PrintToChat(client, "%t", "TimerFinished", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW,GREEN,YELLOW);
+							PrintToChat(client, "%t", "TimerFinished", YELLOW,LIGHTGREEN,YELLOW);
 					}else{
 						//check for new jump record
 						if(g_RunJumps[client] < g_RecordJumps){
@@ -302,7 +296,7 @@ public Action:Action_MapTimer(Handle:timer, any:client){
 								EmitSoundToAll(g_szRecordSound, client);
 							}else{
 								PrintToChat(client, "%t", "TimerRecord", YELLOW,LIGHTGREEN,YELLOW,GREEN,szName,YELLOW,LIGHTGREEN,szJumps,YELLOW);
-								EmitSoundToClient(client, g_szRecordSound, client);
+								EmitSoundToClient(client, g_szRecordSound);
 							}
 							
 							//update the temporary variables
@@ -313,6 +307,9 @@ public Action:Action_MapTimer(Handle:timer, any:client){
 					
 					//update the player record in the database
 					db_updateRecord(client);
+					
+					//restart timer
+					RestartTimer(client);
 					
 					//clean up
 					g_hMapTimer[client] = INVALID_HANDLE;
