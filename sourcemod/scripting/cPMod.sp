@@ -31,7 +31,7 @@
 
 /*
 [cP mod]
-- version 2.0.5
+- version 2.0.5b
 
 This plugin allows users to save their location and teleport later.
 It further provides some features for non skilled bHopper like low gravity or a scout.
