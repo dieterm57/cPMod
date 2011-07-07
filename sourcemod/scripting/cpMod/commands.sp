@@ -188,12 +188,12 @@ public RestartTimer(client){
 	if(g_bTimer){
 		g_bRacing[client] = false;
 		
-		//if g_hMapTimer running
+		/*//if g_hMapTimer running
 		if(g_hMapTimer[client] != INVALID_HANDLE){
 			//stop it
 			CloseHandle(g_hMapTimer[client]);
 			g_hMapTimer[client] = INVALID_HANDLE;
-		}
+		}*/
 		
 		//@deprecated
 		//seems to be superfluous

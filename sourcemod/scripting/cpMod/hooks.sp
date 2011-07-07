@@ -35,7 +35,7 @@ public Action:Event_player_spawn(Handle:event, const String:name[], bool:dontBro
 	new client = GetClientOfUserId(GetEventInt(event, "userid"));
 	//if noblock enabled
 	if(g_bNoBlock){
-		//disable g_bBlocking
+		//disable player blocking
 		SetEntData(client, FindSendPropOffs("CBaseEntity", "m_CollisionGroup"), 2, 4, true);
 		g_bBlocking[client] = false;
 	}
@@ -54,11 +54,6 @@ public Action:Event_player_spawn(Handle:event, const String:name[], bool:dontBro
 	if(g_bHealClient)
 		//set the initial health
 		SetEntData(client, FindSendPropOffs("CBasePlayer", "m_iHealth"), 500);
-	
-	//if map run timer enabled
-	if(g_bTimer)
-		//create the timer for the player
-		g_hMapTimer[client] = CreateTimer(1.0, Action_MapTimer, client, TIMER_REPEAT);
 	
 	new AdminId:aid = GetUserAdmin(client);
 	//if the player is an admin
@@ -250,10 +245,7 @@ public Action:Action_MapTimer(Handle:timer, any:client){
 				if(g_bHintSound == false)
 					//stop the hintsound
 					StopSound(client, SNDCHAN_STATIC, "UI/hint.wav");
-				
-				//increase the runtime seconds
-				g_RunTime[client]++;
-				
+
 				//if player is in end zone
 				if(IsInsideBox(fPCords, POS_STOP)){
 					//depending on recordtype
@@ -283,6 +275,7 @@ public Action:Action_MapTimer(Handle:timer, any:client){
 							
 							//update the temporary variables
 							g_RecordTime = g_RunTime[client];
+						
 						}else //no new record
 							PrintToChat(client, "%t", "TimerFinished", YELLOW,LIGHTGREEN,YELLOW);
 					}else{
@@ -317,6 +310,10 @@ public Action:Action_MapTimer(Handle:timer, any:client){
 					
 					return Plugin_Stop;
 				}
+				
+				//increase the runtime seconds
+				g_RunTime[client]++;
+				
 			}
 		}
 		return Plugin_Continue;
