@@ -54,8 +54,8 @@ new String:sql_selectPlayerCount[] = "SELECT name FROM player WHERE mapname = '%
 new String:sql_selectPlayerRankTime[] = "SELECT name FROM player WHERE runtime <= (SELECT runtime FROM player WHERE steamid = '%s' AND mapname = '%s' AND runtime NOT LIKE '-1') AND mapname = '%s' AND runtime NOT LIKE '-1' ORDER BY runtime;";
 new String:sql_selectPlayerRankJump[] = "SELECT name FROM player WHERE jumps <= (SELECT jumps FROM player WHERE steamid = '%s' AND mapname = '%s' AND jumps NOT LIKE '-1') AND mapname = '%s' AND jumps NOT LIKE '-1' ORDER BY jumps;";
 
-new String:sql_selectTimeWorldRecord[] = "SELECT name, runtime FROM player WHERE mapname = '%s' AND runtime NOT LIKE '-1' ORDER BY runtime ASC LIMIT 10;";
-new String:sql_selectJumpWorldRecord[] = "SELECT name, jumps FROM player WHERE mapname = '%s' AND jumps NOT LIKE '-1' ORDER BY jumps ASC LIMIT 10;";
+new String:sql_selectTimeWorldRecord[] = "SELECT name, runtime, jumps FROM player WHERE mapname = '%s' AND runtime NOT LIKE '-1' ORDER BY runtime ASC LIMIT 10;";
+new String:sql_selectJumpWorldRecord[] = "SELECT name, jumps, runtime FROM player WHERE mapname = '%s' AND jumps NOT LIKE '-1' ORDER BY jumps ASC LIMIT 10;";
 
 new String:sqlite_purgePlayers[] = "DELETE FROM players WHERE date < datetime('now', '-%i days');";
 new String:sql_purgePlayers[] = "DELETE FROM players WHERE date < DATE_SUB(CURDATE(),INTERVAL %i DAY);";
@@ -275,7 +275,10 @@ public RecordPanelHandler(Handle:menu, MenuAction:action, param1, param2){
 public db_viewPlayerRecord(client, String:szPlayerName[MAX_NAME_LENGTH], String:szMapName[MAX_MAP_LENGTH]){
 	decl String:szQuery[255];
 	
-	Format(szQuery, 255, sql_selectPlayerRecord, szPlayerName, szMapName);
+	decl String:szName[MAX_NAME_LENGTH*2+1];
+	SQL_QuoteString(g_hDb, szPlayerName, szName, MAX_NAME_LENGTH*2+1);
+	
+	Format(szQuery, 255, sql_selectPlayerRecord, szName, szMapName);
 	
 	SQL_TQuery(g_hDb, SQL_ViewPlayerRecordCallback, szQuery, client);
 }
@@ -492,6 +495,7 @@ public SQL_SelectTimeWRCallback(Handle:owner, Handle:hndl, const String:error[],
 	decl String:szValue[64];
 	decl String:szName[MAX_NAME_LENGTH];
 	new time;
+	new jumps;
 	new String:szVrTime[16];
 	
 	new Handle:panel = CreatePanel();
@@ -506,8 +510,9 @@ public SQL_SelectTimeWRCallback(Handle:owner, Handle:hndl, const String:error[],
 			//fetch and format
 			SQL_FetchString(hndl, 0, szName, MAX_NAME_LENGTH);
 			time = SQL_FetchInt(hndl, 1);
+			jumps = SQL_FetchInt(hndl, 2);
 			Format(szVrTime, 16, "%im %is", time/60, time%60);
-			Format(szValue, 64, "%i. %s - %s", i, szName, szVrTime);
+			Format(szValue, 64, "%i. %s - %s @ %i", i, szName, szVrTime, jumps);
 			DrawPanelText(panel, szValue);
 			i++;
 		}
@@ -547,6 +552,8 @@ public SQL_SelectJumpWRCallback(Handle:owner, Handle:hndl, const String:error[],
 	decl String:szValue[64];
 	decl String:szName[MAX_NAME_LENGTH];
 	new jumps;
+	new time;
+	new String:szVrTime[16];
 	
 	new Handle:panel = CreatePanel();
 	DrawPanelText(panel, "byaaaaah's [cP Mod] - JumpWorldRecord");
@@ -560,7 +567,9 @@ public SQL_SelectJumpWRCallback(Handle:owner, Handle:hndl, const String:error[],
 			//fetch and format
 			SQL_FetchString(hndl, 0, szName, MAX_NAME_LENGTH);
 			jumps = SQL_FetchInt(hndl, 1);
-			Format(szValue, 64, "%i. %s - %i Jumps", i, szName, jumps);
+			time = SQL_FetchInt(hndl, 2);
+			Format(szVrTime, 16, "%im %is", time/60, time%60);
+			Format(szValue, 64, "%i. %s - %i @ %s", i, szName, jumps, szVrTime);
 			DrawPanelText(panel, szValue);
 			i++;
 		}
@@ -853,7 +862,10 @@ public db_resetMapCheckpoints(client, String:szMapName[MAX_MAP_LENGTH]){
 public db_resetPlayerCheckpoints(client, String:szPlayerName[MAX_NAME_LENGTH]){
 	decl String:szQuery[255];
 	
-	Format(szQuery, 255, sql_resetPlayerCheckpoints, szPlayerName);
+	decl String:szName[MAX_NAME_LENGTH*2+1];
+	SQL_QuoteString(g_hDb, szPlayerName, szName, MAX_NAME_LENGTH*2+1);
+	
+	Format(szQuery, 255, sql_resetPlayerCheckpoints, szName);
 	
 	SQL_LockDatabase(g_hDb);
 	SQL_FastQuery(g_hDb, szQuery);
@@ -895,7 +907,10 @@ public db_resetMapRecords(client, String:szMapName[MAX_MAP_LENGTH]){
 public db_resetPlayerRecords(client, String:szPlayerName[MAX_NAME_LENGTH]){
 	decl String:szQuery[255];
 	
-	Format(szQuery, 255, sql_resetPlayerRecords, szPlayerName);
+	decl String:szName[MAX_NAME_LENGTH*2+1];
+	SQL_QuoteString(g_hDb, szPlayerName, szName, MAX_NAME_LENGTH*2+1);
+	
+	Format(szQuery, 255, sql_resetPlayerRecords, szName);
 	
 	SQL_LockDatabase(g_hDb);
 	SQL_FastQuery(g_hDb, szQuery);

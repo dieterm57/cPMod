@@ -176,6 +176,7 @@ Versions
     - Changed all variable names to a single standard
     - Changed start/stop setup boxes visibility to admin only
     - No need to restart the map after setting timer cords
+    - Added jumps/time in world record panel
     - Added quakesound set check
     - Added sm_resetmaptimer <mapname>
     - Added sm_resetmapcheckpoints <mapname>
@@ -491,7 +492,7 @@ public setupRecordSound(){
 		g_bRecordSound = false;
 }
 
-//------------------------//
+/*//------------------------//
 // executed on end of map //
 //------------------------//
 public OnMapEnd(){
@@ -518,7 +519,7 @@ public OnMapEnd(){
 		CloseHandle(g_hCleanTimer);
 		g_hCleanTimer = INVALID_HANDLE;
 	}
-}
+}*/
 
 //-----------------------------------//
 // hook executed on changed settings //
@@ -646,6 +647,11 @@ public OnClientPostAdminCheck(client){
 		g_hTraceTimer[client] = INVALID_HANDLE;
 		g_hMapTimer[client] = INVALID_HANDLE;
 		g_CurrentCp[client] = -1;
+		
+		//if map run timer enabled
+		if(g_bTimer)
+			//create the timer for the player
+			g_hMapTimer[client] = CreateTimer(1.0, Action_MapTimer, client, TIMER_REPEAT);
 		
 		//select the last checkpoint
 		//(also creates a new entry in the database, if checkpoint not found)
