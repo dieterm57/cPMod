@@ -57,11 +57,11 @@ Cmds:
 !lowgrav    - Sets player gravity to low
 !normalgrav - Sets player gravity to default
 
-!record <map>         - Displays your record
-!precord <name> <map> - Displays the record of a given player
-!restart              - Restarts your timer
-!stop                 - Stops the timer
-!wr                   - Displays the record on the current map
+!record <map>               - Displays your record
+!precord <name> [<mapname>] - Displays the record of a given player
+!restart                    - Restarts your timer
+!stop                       - Stops the timer
+!wr                         - Displays the record on the current map
 
 
 Cvars:
@@ -176,6 +176,7 @@ Versions
     - Changed all variable names to a single standard
     - Changed start/stop setup boxes visibility to admin only
     - No need to restart the map after setting timer cords
+    - Added russian translation (Thanks to LeX!)
     - Added jumps/time in world record panel
     - Added quakesound set check
     - Added sm_resetmaptimer <mapname>
@@ -185,6 +186,7 @@ Versions
     - Added sm_resetplayerrecords <playername>
     - Added precord <name> <mapname> command
     - Enhanced record command to record <mapname>
+    - Various details changed
 */
 
 #include <sourcemod>
@@ -454,11 +456,9 @@ public OnMapStart(){
 	
 	//reset player slots
 	for(new i = 0; i <= MAXPLAYERS; i++){
-		g_CurrentCp[i] = 0;
+		g_CurrentCp[i] = -1;
 		g_WholeCp[i] = 0;
 		g_Scouts[i] = 0;
-		g_RunTime[i] = 0;
-		g_RunJumps[i] = 0;
 	}
 	
 	//if map timer active
@@ -473,7 +473,7 @@ public OnMapStart(){
 			db_selectWorldRecordJump();
 	}
 	
-	//if cleanup timer active
+	//if cleanup guns timer active
 	if(g_bCleanupGuns)
 		//create the cleanup timer
 		g_hCleanTimer = CreateTimer(10.0, ActionCleanTimer, _, TIMER_REPEAT);
@@ -498,24 +498,27 @@ public setupRecordSound(){
 public OnMapEnd(){
 	//for all of the players
 	for(new i = 0; i <= MAXPLAYERS; i++){
-		//if a timer still active: close it!
-		if(g_bTimer && g_hMapTimer[i] != INVALID_HANDLE){
-			CloseHandle(g_hMapTimer[i]);
-			g_hMapTimer[i] = INVALID_HANDLE;
+		//if checkpoint restoring and valid checkpoint
+		if(g_bRestore && current != -1){
+			//update the checkpoint in the database
+			db_updatePlayerCheckpoint(client, current);
 		}
+		
 		//if a tracer still active: close it!
 		if(g_bTracer && g_hTraceTimer[i] != INVALID_HANDLE){
 			CloseHandle(g_hTraceTimer[i]);
 			g_hTraceTimer[i] = INVALID_HANDLE;
 		}
+		
+		//if a timer still active: close it!
+		if(g_bTimer && g_hMapTimer[i] != INVALID_HANDLE){
+			CloseHandle(g_hMapTimer[i]);
+			g_hMapTimer[i] = INVALID_HANDLE;
+		}
 	}
-	LogMessage("closed client timers");
 	
 	//also close the cleanup timer
 	if(g_bCleanupGuns && g_hCleanTimer != INVALID_HANDLE){
-	
-		LogMessage("closed cleanup timer");
-		
 		CloseHandle(g_hCleanTimer);
 		g_hCleanTimer = INVALID_HANDLE;
 	}
@@ -531,27 +534,17 @@ public OnSettingChanged(Handle:convar, const String:oldValue[], const String:new
 		else
 			g_bEnabled = false;
 	}else if(convar == g_hcvarTimer){
-		
 		if(newValue[0] == '1'){
 			g_bTimer = true;
-			for(new i = 0; i <= MAXPLAYERS; i++){
-				if(g_hMapTimer[i] != INVALID_HANDLE){
-					CloseHandle(g_hMapTimer[i]);
-					g_hMapTimer[i] = INVALID_HANDLE;
-				}
-				g_RunTime[i] = 0;
-				g_RunJumps[i] = 0;
-			}
 		}else{
 			g_bTimer = false;
-			for(new i = 0; i <= MAXPLAYERS; i++){
+			for(new i=0; i<=MAXPLAYERS; i++){
 				if(g_hMapTimer[i] != INVALID_HANDLE){
 					CloseHandle(g_hMapTimer[i]);
 					g_hMapTimer[i] = INVALID_HANDLE;
 				}
 			}
 		}
-		
 	}else if(convar == g_hcvarRecordType){
 		g_bRecordType = newValue[0];
 	}else if(convar == g_hcvarCleanupGuns){
@@ -561,6 +554,7 @@ public OnSettingChanged(Handle:convar, const String:oldValue[], const String:new
 			//g_hCleanTimer = CreateTimer(10.0, ActionCleanTimer, _, TIMER_REPEAT);
 		}else{
 			g_bCleanupGuns = false;
+			
 			CloseHandle(g_hCleanTimer);
 			g_hCleanTimer = INVALID_HANDLE;
 		}
@@ -595,10 +589,15 @@ public OnSettingChanged(Handle:convar, const String:oldValue[], const String:new
 			UnhookEvent("weapon_fire" , Event_weapon_fire);
 		}
 	}else if(convar == g_hcvarTracer){
-		if(newValue[0] == '1')
+		if(newValue[0] == '1'){
 			g_bTracer = true;
-		else
-		g_bTracer = false;
+		}else{
+			g_bTracer = false;
+			for(new i=0; i<=MAXPLAYERS; i++){
+				CloseHandle(g_hTraceTimer[i] );
+				g_hTraceTimer[i] = INVALID_HANDLE;
+			}
+		}
 	}else if(convar == g_hcvarScoutLimit){
 		g_ScoutLimit = newValue[0];
 	}else if(convar == g_hcvarGravity){
@@ -633,8 +632,6 @@ public OnSettingChanged(Handle:convar, const String:oldValue[], const String:new
 		else
 			g_bSpeedUnit = false;
 	}
-	//write changes to disk
-	AutoExecConfig(true, "sm_cpmod");
 }
 
 //------------------------------------//
@@ -647,15 +644,14 @@ public OnClientPostAdminCheck(client){
 		g_hTraceTimer[client] = INVALID_HANDLE;
 		g_hMapTimer[client] = INVALID_HANDLE;
 		g_CurrentCp[client] = -1;
+		g_WholeCp[client] = 0;
 		
-		//if map run timer enabled
-		if(g_bTimer)
-			//create the timer for the player
-			g_hMapTimer[client] = CreateTimer(1.0, Action_MapTimer, client, TIMER_REPEAT);
+		//select playerdata; creates a player if none found
+		db_selectPlayer(client);
 		
-		//select the last checkpoint
-		//(also creates a new entry in the database, if checkpoint not found)
-		db_selectPlayerCheckpoint(client);
+		//if checkpoint restoring select the last one
+		if(g_bRestore)
+			db_selectPlayerCheckpoint(client);
 		
 		//display the help panel
 		HelpPanel(client);
@@ -667,22 +663,24 @@ public OnClientPostAdminCheck(client){
 //-------------------------------//
 public OnClientDisconnect(client){
 	if(g_bEnabled){
-		//cleanup the timer
-		if(g_bTimer && g_hMapTimer[client] != INVALID_HANDLE){
-				CloseHandle(g_hMapTimer[client]);
-				g_hMapTimer[client] = INVALID_HANDLE;
-		}
-		//cleanup the tracer
-		if(g_bTracer && g_hTraceTimer[client] != INVALID_HANDLE){
-				CloseHandle(g_hTraceTimer[client]);
-				g_hTraceTimer[client] = INVALID_HANDLE;
-		}
-		
 		new current = g_CurrentCp[client];
+		
 		//if checkpoint restoring and valid checkpoint
 		if(g_bRestore && current != -1){
-				//update the checkpoint in the database
-				db_updatePlayerCheckpoint(client, current);
+			//update the checkpoint in the database
+			db_updatePlayerCheckpoint(client, current);
 		}
+	}
+	
+	//cleanup the timer
+	if(g_bTimer && g_hMapTimer[client] != INVALID_HANDLE){
+		CloseHandle(g_hMapTimer[client]);
+		g_hMapTimer[client] = INVALID_HANDLE;
+	}
+	
+	//cleanup the tracer
+	if(g_bTracer && g_hTraceTimer[client] != INVALID_HANDLE){
+		CloseHandle(g_hTraceTimer[client]);
+		g_hTraceTimer[client] = INVALID_HANDLE;
 	}
 }

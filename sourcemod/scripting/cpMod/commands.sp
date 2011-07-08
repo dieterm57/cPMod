@@ -97,7 +97,7 @@ public Action:Client_Record(client, args){
 public Action:Client_Player_Record(client, args){
 	//if not enough arguments
 	if(args < 1){
-		ReplyToCommand(client, "[SM] Usage: sm_precord <name>");
+		ReplyToCommand(client, "[SM] Usage: sm_precord <name> [<mapname>]");
 		return Plugin_Handled;
 	}else if(args == 1){
 		decl String:szPlayerName[MAX_NAME_LENGTH];
@@ -163,15 +163,10 @@ public StopTimer(client){
 	
 	//if timer enabled
 	if(g_bTimer){
-		//if g_hMapTimer running
-		if(g_hMapTimer[client] != INVALID_HANDLE){
-			//stop it
-			CloseHandle(g_hMapTimer[client]);
-			g_hMapTimer[client] = INVALID_HANDLE;
-			g_bRacing[client] = false;
-			
-			PrintToChat(client, "%t", "TimerStopped", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
-		}
+		//simply set racing to false
+		g_bRacing[client] = false;
+		
+		PrintToChat(client, "%t", "TimerStopped", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
 	}else //timer disabled
 		PrintToChat(client, "%t", "TimerDisabled", YELLOW,LIGHTGREEN,YELLOW);
 }
@@ -187,18 +182,6 @@ public RestartTimer(client){
 	//if timer enabled
 	if(g_bTimer){
 		g_bRacing[client] = false;
-		
-		/*//if g_hMapTimer running
-		if(g_hMapTimer[client] != INVALID_HANDLE){
-			//stop it
-			CloseHandle(g_hMapTimer[client]);
-			g_hMapTimer[client] = INVALID_HANDLE;
-		}*/
-		
-		//@deprecated
-		//seems to be superfluous
-		//CreateTimer(2.0, ActionRestartTimer, client);
-		//SDKCall(h_Respawn, client);
 		
 		//respawn player
 		CS_RespawnPlayer(client);
@@ -337,7 +320,8 @@ public TeleClient(client,pos){
 			new actual = current+pos;
 			
 			//if not valid checkpoint
-			if(actual < 0 || actual > whole || (g_fPlayerCords[client][actual][0] == 0.0 && g_fPlayerCords[client][actual][1] == 0.0 && g_fPlayerCords[client][actual][2] == 0.0)){
+			//if(actual < 0 || actual > whole || (g_fPlayerCords[client][actual][0] == 0.0 && g_fPlayerCords[client][actual][1] == 0.0 && g_fPlayerCords[client][actual][2] == 0.0)){
+			if(actual < 0 || actual > whole){
 				PrintToChat(client, "%t", "CpNotFound", YELLOW,LIGHTGREEN,YELLOW);
 			}else{ //valid
 				TeleportEntity(client, g_fPlayerCords[client][actual],g_fPlayerAngles[client][actual],NULL_VECTOR);
