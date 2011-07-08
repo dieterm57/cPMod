@@ -7,21 +7,21 @@
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License, version 3.0, as published by the
  * Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along with
- * this program.  If not, see <http://www.gnu.org/licenses/>.
+ * this program. If not, see <http://www.gnu.org/licenses/>.
  *
  * As a special exception, AlliedModders LLC gives you permission to link the
  * code of this program (as well as its derivative 1works) to "Half-Life 2," the
  * "Source Engine," the "SourcePawn JIT," and any Game MODs that run on software
- * by the Valve Corporation.  You must obey the GNU General Public License in
- * all respects for all other code used.  Additionally, AlliedModders LLC grants
- * this exception to all derivative works.  AlliedModders LLC defines further
+ * by the Valve Corporation. You must obey the GNU General Public License in
+ * all respects for all other code used. Additionally, AlliedModders LLC grants
+ * this exception to all derivative works. AlliedModders LLC defines further
  * exceptions, found in LICENSE.txt,
  * or <http://www.sourcemod.net/license.php>.
  *
@@ -35,7 +35,7 @@ public Action:Event_player_spawn(Handle:event, const String:name[], bool:dontBro
 	new client = GetClientOfUserId(GetEventInt(event, "userid"));
 	//if noblock enabled
 	if(g_bNoBlock){
-		//disable player blocking
+		//disable g_bBlocking
 		SetEntData(client, FindSendPropOffs("CBaseEntity", "m_CollisionGroup"), 2, 4, true);
 		g_bBlocking[client] = false;
 	}
@@ -55,16 +55,23 @@ public Action:Event_player_spawn(Handle:event, const String:name[], bool:dontBro
 		//set the initial health
 		SetEntData(client, FindSendPropOffs("CBasePlayer", "m_iHealth"), 500);
 	
+	//if map run timer enabled and not allready started
+	if(g_bTimer && g_hMapTimer[client] == INVALID_HANDLE) {
+		//create the timer for the player
+		g_hMapTimer[client] = CreateTimer(1.0, Action_MapTimer, client, TIMER_REPEAT);
+	}
+	
 	new AdminId:aid = GetUserAdmin(client);
 	//if the player is an admin
 	if(aid != INVALID_ADMIN_ID && GetAdminFlag(aid, Admin_Generic)){
-		//if player tracer enabled
-		if(g_bTracer)
+		
+		//if player tracer enabled and not allready started
+		if(g_bTracer && g_hTraceTimer[client] == INVALID_HANDLE)
 			//give him a nice tracer
 			g_hTraceTimer[client] = CreateTimer(1.0, ActionTraceTimer, client, TIMER_REPEAT);
 		
-		//if the timer is enabled end the cords are not set
-		if(g_bTimer && !g_bStartCordsSet && !g_bStopCordsSet){
+		//if the timer is enabled, not started and the cords are not set
+		if(g_bTimer && g_hMapTimer[client] == INVALID_HANDLE && !g_bStartCordsSet && !g_bStopCordsSet){
 			//give him the chance to set them
 			PrintToChat(client, "%t", "CordsNotSet", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
 			CpAdminPanel(client);
@@ -103,6 +110,7 @@ public Action:Event_weapon_fire(Handle:event,const String:name[],bool:dontBroadc
 	decl String:szWeaponName[32];
 	GetEventString(event, "weapon", szWeaponName, 32);
 	new client = GetClientOfUserId(GetEventInt(event,"userid"));
+	
 	//if the fired weapon is a flashbang
 	if(StrEqual(szWeaponName,"flashbang"))
 		//give the player a flashbang back
@@ -184,7 +192,7 @@ public IsInsideBox(Float:fPCords[3], pos){
 		bY=true;
 	else if(fbsy<fbey && fpy>=fbsy && fpy<=fbey)
 		bY=true;
-		
+	
 	if(fbsz>fbez && fpz <= fbsz && fpz>=fbez)
 		bZ=true;
 	else if(fbsz<fbez && fpz>=fbsz && fpz<=fbez)
@@ -209,6 +217,7 @@ public Action:Action_MapTimer(Handle:timer, any:client){
 		
 		//if player is allready racing
 		if(g_bRacing[client] == false){
+			
 			//if player is in start zone
 			if(IsInsideBox(fPCords, POS_START)){
 				//set variables for racing
@@ -217,14 +226,17 @@ public Action:Action_MapTimer(Handle:timer, any:client){
 				g_RunJumps[client] = 0;
 				PrintToChat(client, "%t", "TimerStarted", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
 			}
-		}else{ //not racing
+		}else{ //racing?
 			//if player is still in start zone
 			if(IsInsideBox(fPCords, POS_START)){
 				//set variables for racing again
-				g_RunTime[client] = 1;
+				g_RunTime[client] = 0;
 				g_RunJumps[client] = 0;
 				//PrintToChat(client, "%t", "TimerRestarted", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
-			}else{ //racing
+			}else{ //racing!
+				//increase the runtime seconds
+				g_RunTime[client]++;
+				
 				//calculate time, jumps and speed
 				new minutes = g_RunTime[client]/60;
 				new seconds = g_RunTime[client]%60;
@@ -239,13 +251,13 @@ public Action:Action_MapTimer(Handle:timer, any:client){
 					speed *= 0.06858;
 					PrintHintText(client,"Your time: %s\nJumps: %s\nSpeed: %i Km/h",szTime,szJumps,speed);
 				} else
-					PrintHintText(client,"Your time: %s\nJumps: %s\nSpeed: %i units",szTime,szJumps,speed);
+					PrintHintText(client,"Your time: %s\nJumps: %s\nSpeed: %i units/s",szTime,szJumps,speed);
 				
 				//if playing hint sound disabled
 				if(g_bHintSound == false)
 					//stop the hintsound
 					StopSound(client, SNDCHAN_STATIC, "UI/hint.wav");
-
+				
 				//if player is in end zone
 				if(IsInsideBox(fPCords, POS_STOP)){
 					//depending on recordtype
@@ -264,7 +276,7 @@ public Action:Action_MapTimer(Handle:timer, any:client){
 								if(g_bRecordSound)
 									EmitSoundToAll(g_szRecordSound, client);
 								
-							//client only output
+								//client only output
 							}else{
 								PrintToChat(client, "%t", "TimerRecord", YELLOW,LIGHTGREEN,YELLOW,GREEN,szName,YELLOW,LIGHTGREEN,szTime,YELLOW);
 								
@@ -275,9 +287,8 @@ public Action:Action_MapTimer(Handle:timer, any:client){
 							
 							//update the temporary variables
 							g_RecordTime = g_RunTime[client];
-						
 						}else //no new record
-							PrintToChat(client, "%t", "TimerFinished", YELLOW,LIGHTGREEN,YELLOW);
+							PrintToChat(client, "%t", "TimerFinished", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW,GREEN,YELLOW);
 					}else{
 						//check for new jump record
 						if(g_RunJumps[client] < g_RecordJumps){
@@ -295,25 +306,16 @@ public Action:Action_MapTimer(Handle:timer, any:client){
 							//update the temporary variables
 							g_RecordJumps = g_RunJumps[client];
 						}else //no new record
-							PrintToChat(client, "%t", "TimerFinished", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW,GREEN,YELLOW);
+						PrintToChat(client, "%t", "TimerFinished", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW,GREEN,YELLOW);
 					}
-					
 					//update the player record in the database
 					db_updateRecord(client);
 					
-					//restart timer
-					RestartTimer(client);
-					
-					//clean up
-					g_hMapTimer[client] = INVALID_HANDLE;
+					//disable racing
 					g_bRacing[client] = false;
 					
-					return Plugin_Stop;
+					return Plugin_Continue;
 				}
-				
-				//increase the runtime seconds
-				g_RunTime[client]++;
-				
 			}
 		}
 		return Plugin_Continue;

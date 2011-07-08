@@ -48,8 +48,9 @@ new String:sql_selectCheckpoint[] = "SELECT cords, angle FROM player WHERE steam
 new String:sql_selectWorldRecordTime[] = "SELECT jumps, runtime FROM player WHERE mapname = '%s' AND jumps NOT LIKE '-1' AND runtime NOT LIKE '-1' ORDER BY runtime ASC LIMIT 1;";
 new String:sql_selectWorldRecordJump[] = "SELECT jumps, runtime FROM player WHERE mapname = '%s' AND jumps NOT LIKE '-1' AND runtime NOT LIKE '-1' ORDER BY jumps ASC LIMIT 1;";
 
-new String:sql_selectRecord[] = "SELECT name, jumps, runtime, date FROM player WHERE steamid = '%s' AND mapname = '%s' AND jumps NOT LIKE '-1' AND runtime NOT LIKE '-1';";
-new String:sql_selectPlayerRecord[] = "SELECT name, jumps, runtime, date FROM player WHERE name LIKE '%s' AND mapname = '%s' AND jumps NOT LIKE '-1' AND runtime NOT LIKE '-1';";
+new String:sql_selectPlayer[] = "SELECT date FROM player WHERE steamid = '%s' AND mapname = '%s';";
+new String:sql_selectRecord[] = "SELECT steamid, name, jumps, runtime, date FROM player WHERE steamid = '%s' AND mapname = '%s' AND jumps NOT LIKE '-1' AND runtime NOT LIKE '-1';";
+new String:sql_selectPlayerRecord[] = "SELECT steamid, name, jumps, runtime, date FROM player WHERE name LIKE '%s' AND mapname = '%s' AND jumps NOT LIKE '-1' AND runtime NOT LIKE '-1';";
 new String:sql_selectPlayerCount[] = "SELECT name FROM player WHERE mapname = '%s' AND jumps NOT LIKE '-1' AND runtime NOT LIKE '-1';";
 new String:sql_selectPlayerRankTime[] = "SELECT name FROM player WHERE runtime <= (SELECT runtime FROM player WHERE steamid = '%s' AND mapname = '%s' AND runtime NOT LIKE '-1') AND mapname = '%s' AND runtime NOT LIKE '-1' ORDER BY runtime;";
 new String:sql_selectPlayerRankJump[] = "SELECT name FROM player WHERE jumps <= (SELECT jumps FROM player WHERE steamid = '%s' AND mapname = '%s' AND jumps NOT LIKE '-1') AND mapname = '%s' AND jumps NOT LIKE '-1' ORDER BY jumps;";
@@ -223,37 +224,36 @@ public SQL_ViewRecordCallback(Handle:owner, Handle:hndl, const String:error[], a
 	//if there is a player record
 	if(SQL_HasResultSet(hndl) && SQL_FetchRow(hndl)){
 		
-		decl String:name[MAX_NAME_LENGTH];
+		decl String:szName[MAX_NAME_LENGTH];
+		decl String:szSteamId[32];
 		new jumps;
 		new time;
-		decl String:date[20];
+		decl String:szDate[20];
 		
 		//get the result
-		SQL_FetchString(hndl, 0, name, MAX_NAME_LENGTH);
-		jumps = SQL_FetchInt(hndl, 1);
-		time = SQL_FetchInt(hndl, 2);
-		SQL_FetchString(hndl, 3, date, 20);
+		SQL_FetchString(hndl, 0, szSteamId, MAX_NAME_LENGTH);
+		SQL_FetchString(hndl, 1, szName, MAX_NAME_LENGTH);
+		jumps = SQL_FetchInt(hndl, 2);
+		time = SQL_FetchInt(hndl, 3);
+		SQL_FetchString(hndl, 4, szDate, 20);
 		
 		//call a method to display the rank text
 		if(g_bRecordType == RECORD_TIME)
-			db_viewPlayerRank(client, time, g_szMapName);
+			db_viewPlayerRank(client, szSteamId, szName, time, g_szMapName);
 		else
-			db_viewPlayerRank(client, jumps, g_szMapName);
+			db_viewPlayerRank(client, szSteamId, szName, jumps, g_szMapName);
 		
 		//display a panel
-		new String:vrname[MAX_NAME_LENGTH];
-		new String:vrjumps[16];
-		new String:vrtime[20];
-		new String:vrdate[32];
-		Format(vrname, MAX_NAME_LENGTH, "User: %s", name);
-		Format(vrjumps, 16, "Jumps: %i", jumps);  
-		Format(vrtime, 16, "Time: %im %is", time/60, time%60);
-		Format(vrdate, 32, "Date: %s", date); 
-		
-		DrawPanelText(panel, vrname);
-		DrawPanelText(panel, vrjumps);
-		DrawPanelText(panel, vrtime);
-		DrawPanelText(panel, vrdate);
+		decl String:szVrName[MAX_NAME_LENGTH];
+		decl String:szVrMap[MAX_MAP_LENGTH];
+		decl String:szVrJumps[16];
+		decl String:szVrTime[20];
+		decl String:szVrDate[32];
+		Format(szVrName, MAX_NAME_LENGTH, "User: %s", szName);
+		Format(szVrMap, MAX_MAP_LENGTH, "Map: %s", g_szMapName);
+		Format(szVrJumps, 16, "Jumps: %i", jumps);  
+		Format(szVrTime, 16, "Time: %im %is", time/60, time%60);
+		Format(szVrDate, 32, "Date: %s", szDate); 
 		
 		DrawPanelItem(panel, "exit");
 		SendPanelToClient(panel, client, RecordPanelHandler, 10);
@@ -275,12 +275,17 @@ public RecordPanelHandler(Handle:menu, MenuAction:action, param1, param2){
 public db_viewPlayerRecord(client, String:szPlayerName[MAX_NAME_LENGTH], String:szMapName[MAX_MAP_LENGTH]){
 	decl String:szQuery[255];
 	
+	//escape some quote characters that could mess up the szQuery
 	decl String:szName[MAX_NAME_LENGTH*2+1];
 	SQL_QuoteString(g_hDb, szPlayerName, szName, MAX_NAME_LENGTH*2+1);
 	
 	Format(szQuery, 255, sql_selectPlayerRecord, szName, szMapName);
 	
-	SQL_TQuery(g_hDb, SQL_ViewPlayerRecordCallback, szQuery, client);
+	new Handle:pack = CreateDataPack();
+	WritePackCell(pack, client);
+	WritePackString(pack, szMapName);
+	
+	SQL_TQuery(g_hDb, SQL_ViewPlayerRecordCallback, szQuery, pack);
 }
 //----------//
 // callback //
@@ -289,7 +294,14 @@ public SQL_ViewPlayerRecordCallback(Handle:owner, Handle:hndl, const String:erro
 	if(hndl == INVALID_HANDLE)
 		LogError("[cP Mod] Error loading player record (%s)", error);
 	
-	new client = data;
+	new Handle:pack = data;
+	ResetPack(pack);
+	
+	new client = ReadPackCell(pack);
+	decl String:szMapName[MAX_MAP_LENGTH];
+	ReadPackString(pack, szMapName, MAX_MAP_LENGTH);
+	
+	CloseHandle(pack);
 	
 	new Handle:panel = CreatePanel();
 	DrawPanelText(panel, "byaaaaah's [cP Mod] - Record");
@@ -297,35 +309,40 @@ public SQL_ViewPlayerRecordCallback(Handle:owner, Handle:hndl, const String:erro
 	
 	//if there is a player record
 	if(SQL_HasResultSet(hndl) && SQL_FetchRow(hndl)){
-		
+	
+		decl String:szSteamId[32];
 		decl String:szName[MAX_NAME_LENGTH];
 		new jumps;
 		new time;
 		decl String:szDate[20];
 		
 		//get the result
-		SQL_FetchString(hndl, 0, szName, MAX_NAME_LENGTH);
-		jumps = SQL_FetchInt(hndl, 1);
-		time = SQL_FetchInt(hndl, 2);
-		SQL_FetchString(hndl, 3, szDate, 20);
+		SQL_FetchString(hndl, 0, szSteamId, 32);
+		SQL_FetchString(hndl, 1, szName, MAX_NAME_LENGTH);
+		jumps = SQL_FetchInt(hndl, 2);
+		time = SQL_FetchInt(hndl, 3);
+		SQL_FetchString(hndl, 4, szDate, 20);
 		
 		//call a method to display the rank text
 		if(g_bRecordType == RECORD_TIME)
-			db_viewPlayerRank(client, time, g_szMapName); //todo: arg mapname
+			db_viewPlayerRank(client, szSteamId, szName, time, szMapName);
 		else
-			db_viewPlayerRank(client, jumps, g_szMapName);
+			db_viewPlayerRank(client, szSteamId, szName,jumps, szMapName);
 		
 		//display a panel
-		new String:szVrName[MAX_NAME_LENGTH];
-		new String:szVrJumps[16];
-		new String:szVrZime[20];
-		new String:szVrDate[32];
+		decl String:szVrName[MAX_NAME_LENGTH];
+		decl String:szVrMap[MAX_MAP_LENGTH];
+		decl String:szVrJumps[16];
+		decl String:szVrZime[20];
+		decl String:szVrDate[32];
 		Format(szVrName, MAX_NAME_LENGTH, "User: %s", szName);
+		Format(szVrMap, MAX_MAP_LENGTH, "Map: %s", szMapName);
 		Format(szVrJumps, 16, "Jumps: %i", jumps);  
 		Format(szVrZime, 16, "Time: %im %is", time/60, time%60);
 		Format(szVrDate, 32, "Date: %s", szDate); 
 		
 		DrawPanelText(panel, szVrName);
+		DrawPanelText(panel, szVrMap);
 		DrawPanelText(panel, szVrJumps);
 		DrawPanelText(panel, szVrZime);
 		DrawPanelText(panel, szVrDate);
@@ -339,7 +356,7 @@ public SQL_ViewPlayerRecordCallback(Handle:owner, Handle:hndl, const String:erro
 		DrawPanelItem(panel, "exit");
 		SendPanelToClient(panel, client, RecordPanelHandler, 10);
 		CloseHandle(panel);
-	}	
+	}
 }
 public PlayerRecordPanelHandler(Handle:menu, MenuAction:action, param1, param2){
 }
@@ -347,17 +364,21 @@ public PlayerRecordPanelHandler(Handle:menu, MenuAction:action, param1, param2){
 //-------------------------//
 // view player rank method //
 //-------------------------//
-public db_viewPlayerRank(client, record, String:szMapName[MAX_MAP_LENGTH]){
+public db_viewPlayerRank(client, String:szSteamId[32], String:szName[MAX_NAME_LENGTH], record, String:szMapName[MAX_MAP_LENGTH]){
 	decl String:szQuery[255];
-	decl String:szSteamId[32];
-	GetClientAuthString(client, szSteamId, 32);
 	
 	if(g_bRecordType == RECORD_TIME)
-		Format(szQuery, 255, sql_selectPlayerRankTime, szSteamId, g_szMapName, szMapName);
+		Format(szQuery, 255, sql_selectPlayerRankTime, szSteamId, szMapName, szMapName);
 	else
-		Format(szQuery, 255, sql_selectPlayerRankJump, szSteamId, g_szMapName, szMapName);
+		Format(szQuery, 255, sql_selectPlayerRankJump, szSteamId, szMapName, szMapName);
 	
-	SQL_TQuery(g_hDb, SQL_ViewPlayerRankCallback, szQuery, client);
+	new Handle:pack = CreateDataPack();
+	WritePackCell(pack, client);
+	WritePackString(pack, szMapName);
+	WritePackString(pack, szSteamId);
+	WritePackString(pack, szName);
+	
+	SQL_TQuery(g_hDb, SQL_ViewPlayerRankCallback, szQuery, pack);
 }
 //----------//
 // callback //
@@ -366,24 +387,33 @@ public SQL_ViewPlayerRankCallback(Handle:owner, Handle:hndl, const String:error[
 	if(hndl == INVALID_HANDLE)
 		LogError("[cP Mod] Error viewing record (%s)", error);
 	
-	new rank = SQL_GetRowCount(hndl);
-	
-	new Handle:pack = CreateDataPack();
-	WritePackCell(pack, data);
-	WritePackCell(pack, rank);
-	
-	db_viewPlayerRank2(pack);
+	//if there is a player record
+	if(SQL_HasResultSet(hndl) && SQL_FetchRow(hndl)){
+		new rank = SQL_GetRowCount(hndl);
+		
+		//append data
+		new Handle:pack = data;
+		WritePackCell(pack, rank);
+		
+		db_viewPlayerRank2(pack);
+	}
 }
 
 //--------------------------//
 // view player rank2 method //
 //--------------------------//
-public db_viewPlayerRank2(any:pack){
+public db_viewPlayerRank2(any:data){
 	decl String:szQuery[255];
 	
-	Format(szQuery, 255, sql_selectPlayerCount, g_szMapName);
+	new Handle:pack = data;
+	ResetPack(pack);
+	ReadPackCell(pack);
+	decl String:szMapName[MAX_MAP_LENGTH];
+	ReadPackString(pack, szMapName, MAX_NAME_LENGTH);
 	
-	SQL_TQuery(g_hDb, SQL_ViewPlayerRankCallback2, szQuery, pack);
+	Format(szQuery, 255, sql_selectPlayerCount, szMapName);
+	
+	SQL_TQuery(g_hDb, SQL_ViewPlayerRankCallback2, szQuery, data);
 }
 //----------//
 // callback //
@@ -397,11 +427,15 @@ public SQL_ViewPlayerRankCallback2(Handle:owner, Handle:hndl, const String:error
 	new Handle:pack = data;
 	ResetPack(pack);
 	new client = ReadPackCell(pack);
-	new rank = ReadPackCell(pack);
-	CloseHandle(pack);
-	
+	decl String:szMapName[MAX_MAP_LENGTH];
+	ReadPackString(pack, szMapName, MAX_MAP_LENGTH);
+	decl String:szSteamId[32];
+	ReadPackString(pack, szSteamId, 32);
 	decl String:szName[MAX_NAME_LENGTH];
-	GetClientName(client, szName, MAX_NAME_LENGTH);
+	ReadPackString(pack, szName, MAX_NAME_LENGTH);
+	new rank = ReadPackCell(pack);
+	
+	CloseHandle(pack);
 	
 	if(g_bChatVisible)
 		PrintToChatAll("%t", "PlayerRank", YELLOW,LIGHTGREEN,YELLOW,GREEN,szName,YELLOW,GREEN,rank,count,YELLOW);
@@ -435,18 +469,18 @@ public SQL_UpdateRecordCallback(Handle:owner, Handle:hndl, const String:error[],
 		//if recordtime is type of time
 		if(g_bRecordType == RECORD_TIME){
 			new time;
-			time = SQL_FetchInt(hndl, 2);
+			time = SQL_FetchInt(hndl, 3);
 			
 			//if the new record beats the old one
 			if(g_RunTime[client] <= time)
 				db_updateRecord2(client);
 		}else{ //type of jump
 			new jumps;
-			jumps = SQL_FetchInt(hndl, 1);
+			jumps = SQL_FetchInt(hndl, 2);
 			
 			//if the new record beats the old one
 			if(g_RunJumps[client] <= jumps)
-				db_updateRecord(client);
+				db_updateRecord2(client);
 		}
 	//no record found, update!
 	}else
@@ -468,6 +502,7 @@ public db_updateRecord2(client){
 	//escape some quote characters that could mess up the szQuery
 	SQL_QuoteString(g_hDb, szUName, szName, MAX_NAME_LENGTH*2+1);
 	
+	//@bug: sometimes g_RunTime is 1 too big
 	Format(szQuery, 255, sql_updateRecord, szUName, g_RunJumps[client], g_RunTime[client], szSteamId, g_szMapName);
 	
 	SQL_TQuery(g_hDb, SQL_CheckCallback, szQuery);
@@ -496,7 +531,7 @@ public SQL_SelectTimeWRCallback(Handle:owner, Handle:hndl, const String:error[],
 	decl String:szName[MAX_NAME_LENGTH];
 	new time;
 	new jumps;
-	new String:szVrTime[16];
+	decl String:szVrTime[16];
 	
 	new Handle:panel = CreatePanel();
 	DrawPanelText(panel, "byaaaaah's [cP Mod] - TimeWorldRecord");
@@ -553,7 +588,7 @@ public SQL_SelectJumpWRCallback(Handle:owner, Handle:hndl, const String:error[],
 	decl String:szName[MAX_NAME_LENGTH];
 	new jumps;
 	new time;
-	new String:szVrTime[16];
+	decl String:szVrTime[16];
 	
 	new Handle:panel = CreatePanel();
 	DrawPanelText(panel, "byaaaaah's [cP Mod] - JumpWorldRecord");
@@ -586,6 +621,33 @@ public SQL_SelectJumpWRCallback(Handle:owner, Handle:hndl, const String:error[],
 // handler //
 //---------//
 public JumpWorldRecordPanelHandler(Handle:menu, MenuAction:action, param1, param2){
+}
+
+//---------------------//
+// select plyer method //
+//---------------------//
+public db_selectPlayer(client){
+	decl String:szQuery[255];
+	decl String:szSteamId[32];
+	GetClientAuthString(client, szSteamId, 32);
+	
+	Format(szQuery, 255, sql_selectPlayer, szSteamId, g_szMapName);
+	
+	SQL_TQuery(g_hDb, SQL_SelectPlayerCallback, szQuery, client);
+}
+//----------//
+// callback //
+//----------//
+public SQL_SelectPlayerCallback(Handle:owner, Handle:hndl, const String:error[], any:data){
+	if(hndl == INVALID_HANDLE)
+		LogError("[cP Mod] Error loading player (%s)", error);
+	
+	new client = data;
+	//if there is a player entry
+	if(SQL_HasResultSet(hndl) && SQL_FetchRow(hndl) && IsClientInGame(client)){
+		//do nothing
+	}else
+		db_insertPlayer(client);
 }
 
 //----------------------------------//
@@ -681,7 +743,7 @@ public SQL_SelectCheckpointCallback(Handle:owner, Handle:hndl, const String:erro
 		SQL_FetchString(hndl, 1, szAngles, 32);
 		
 		//if checkpoint not valid
-		if(StrEqual(szCords, "0:0:0") || StrEqual(szAngles, "0:0:0")){
+		if(StrEqual(szCords, "0:0:0") || StrEqual(szCords, "0.000000:0.000000:0.000000") || StrEqual(szAngles, "0:0:0") || StrEqual(szAngles, "0.000000:0.000000:0.000000")){
 			g_CurrentCp[client] = -1;
 			g_WholeCp[client] = 0;
 		}else{ //valid
@@ -703,8 +765,7 @@ public SQL_SelectCheckpointCallback(Handle:owner, Handle:hndl, const String:erro
 			
 			PrintToChat(client, "%t", "CheckpointRestored", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
 		}
-	}else if(IsClientInGame(client)) //no checkpoint, so insert the player
-		db_insertPlayer(client);
+	}
 }
 
 //---------------------------------//
@@ -862,6 +923,7 @@ public db_resetMapCheckpoints(client, String:szMapName[MAX_MAP_LENGTH]){
 public db_resetPlayerCheckpoints(client, String:szPlayerName[MAX_NAME_LENGTH]){
 	decl String:szQuery[255];
 	
+	//escape some quote characters that could mess up the szQuery
 	decl String:szName[MAX_NAME_LENGTH*2+1];
 	SQL_QuoteString(g_hDb, szPlayerName, szName, MAX_NAME_LENGTH*2+1);
 	
@@ -885,6 +947,12 @@ public db_resetRecords(client){
 	
 	PrintToConsole(client, "RecordTable cleared.");
 	LogMessage("RecordTable cleared.");
+	
+	//maybe there is a "new" record
+	if(g_bRecordType == RECORD_TIME)
+		db_selectWorldRecordTime();
+	else
+		db_selectWorldRecordJump();
 }
 //--------------------------//
 // reset map records method //
@@ -900,6 +968,12 @@ public db_resetMapRecords(client, String:szMapName[MAX_MAP_LENGTH]){
 	
 	PrintToConsole(client, "MapRecordTable cleared.");
 	LogMessage("MapRecordTable cleared.");
+	
+	//maybe there is a "new" record
+	if(g_bRecordType == RECORD_TIME)
+		db_selectWorldRecordTime();
+	else
+		db_selectWorldRecordJump();
 }
 //-----------------------------//
 // reset player records method //
@@ -907,10 +981,11 @@ public db_resetMapRecords(client, String:szMapName[MAX_MAP_LENGTH]){
 public db_resetPlayerRecords(client, String:szPlayerName[MAX_NAME_LENGTH]){
 	decl String:szQuery[255];
 	
+	//escape some quote characters that could mess up the szQuery
 	decl String:szName[MAX_NAME_LENGTH*2+1];
 	SQL_QuoteString(g_hDb, szPlayerName, szName, MAX_NAME_LENGTH*2+1);
 	
-	Format(szQuery, 255, sql_resetPlayerRecords, szName);
+	Format(szQuery, 255, sql_resetPlayerRecords, szPlayerName);
 	
 	SQL_LockDatabase(g_hDb);
 	SQL_FastQuery(g_hDb, szQuery);
@@ -918,6 +993,12 @@ public db_resetPlayerRecords(client, String:szPlayerName[MAX_NAME_LENGTH]){
 	
 	PrintToConsole(client, "PlayerRecordTable cleared.");
 	LogMessage("PlayerRecordTable cleared.");
+	
+	//maybe there is a "new" record
+	if(g_bRecordType == RECORD_TIME)
+		db_selectWorldRecordTime();
+	else
+		db_selectWorldRecordJump();
 }
 
 //-----------------//

@@ -65,10 +65,16 @@ public CpAdminPanelHandler(Handle:menu, MenuAction:action, param1, param2){
 				GetClientAbsOrigin(param1,g_fCpSetBCords);
 				g_hcpSetterTimer = CreateTimer(0.1, CpSetTimer, param1, TIMER_REPEAT);
 				CpAdminPanelStart(param1);
+				
+				//stop map timer
+				g_bRacing[param1] = false;
 			}else{ //stop
 				GetClientAbsOrigin(param1,g_fCpSetBCords);
 				g_hcpSetterTimer = CreateTimer(0.1, CpSetTimer, param1, TIMER_REPEAT);
 				CpAdminPanelStop(param1);
+				
+				//stop map timer
+				g_bRacing[param1] = false;
 			}
 		}else if(action == MenuAction_End){
 			CloseHandle(menu);
