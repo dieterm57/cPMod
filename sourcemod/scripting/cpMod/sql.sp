@@ -70,11 +70,11 @@ new String:sql_resetMapTimer[] = "UPDATE map SET start0 = '0:0:0', start1 = '0:0
 
 new String:sql_resetCheckpoints[] = "UPDATE player SET cords = '0:0:0', angle = '0:0:0';";
 new String:sql_resetMapCheckpoints[] = "UPDATE player SET cords = '0:0:0', angle = '0:0:0' WHERE mapname = '%s';";
-new String:sql_resetPlayerCheckpoints[] = "UPDATE player SET cords = '0:0:0', angle = '0:0:0' WHERE name LIKE '%s';";
+new String:sql_resetPlayerCheckpoints[] = "UPDATE player SET cords = '0:0:0', angle = '0:0:0' WHERE name LIKE '%s' AND mapname LIKE '%s';";
 
 new String:sql_resetRecords[] = "UPDATE player SET jumps = '-1', runtime = '-1';";
 new String:sql_resetMapRecords[] = "UPDATE player SET jumps = '-1', runtime = '-1' WHERE mapname = '%s';";
-new String:sql_resetPlayerRecords[] = "UPDATE player SET jumps = '-1', runtime = '-1' WHERE name LIKE '%s';";
+new String:sql_resetPlayerRecords[] = "UPDATE player SET jumps = '-1', runtime = '-1' WHERE name LIKE '%s' AND mapname = '%s';";
 
 
 //-------------------------//
@@ -255,6 +255,12 @@ public SQL_ViewRecordCallback(Handle:owner, Handle:hndl, const String:error[], a
 		Format(szVrTime, 16, "Time: %im %is", time/60, time%60);
 		Format(szVrDate, 32, "Date: %s", szDate); 
 		
+		DrawPanelText(panel, szVrName);
+		DrawPanelText(panel, szVrMap);
+		DrawPanelText(panel, szVrJumps);
+		DrawPanelText(panel, szVrTime);
+		DrawPanelText(panel, szVrDate);
+
 		DrawPanelItem(panel, "exit");
 		SendPanelToClient(panel, client, RecordPanelHandler, 10);
 		CloseHandle(panel);
@@ -327,24 +333,24 @@ public SQL_ViewPlayerRecordCallback(Handle:owner, Handle:hndl, const String:erro
 		if(g_bRecordType == RECORD_TIME)
 			db_viewPlayerRank(client, szSteamId, szName, time, szMapName);
 		else
-			db_viewPlayerRank(client, szSteamId, szName,jumps, szMapName);
+			db_viewPlayerRank(client, szSteamId, szName, jumps, szMapName);
 		
 		//display a panel
 		decl String:szVrName[MAX_NAME_LENGTH];
 		decl String:szVrMap[MAX_MAP_LENGTH];
 		decl String:szVrJumps[16];
-		decl String:szVrZime[20];
+		decl String:szVrTime[20];
 		decl String:szVrDate[32];
 		Format(szVrName, MAX_NAME_LENGTH, "User: %s", szName);
 		Format(szVrMap, MAX_MAP_LENGTH, "Map: %s", szMapName);
 		Format(szVrJumps, 16, "Jumps: %i", jumps);  
-		Format(szVrZime, 16, "Time: %im %is", time/60, time%60);
+		Format(szVrTime, 16, "Time: %im %is", time/60, time%60);
 		Format(szVrDate, 32, "Date: %s", szDate); 
 		
 		DrawPanelText(panel, szVrName);
 		DrawPanelText(panel, szVrMap);
 		DrawPanelText(panel, szVrJumps);
-		DrawPanelText(panel, szVrZime);
+		DrawPanelText(panel, szVrTime);
 		DrawPanelText(panel, szVrDate);
 		
 		DrawPanelItem(panel, "exit");
@@ -403,6 +409,7 @@ public SQL_ViewPlayerRankCallback(Handle:owner, Handle:hndl, const String:error[
 // view player rank2 method //
 //--------------------------//
 public db_viewPlayerRank2(any:data){
+
 	decl String:szQuery[255];
 	
 	new Handle:pack = data;
@@ -927,7 +934,7 @@ public db_resetPlayerCheckpoints(client, String:szPlayerName[MAX_NAME_LENGTH]){
 	decl String:szName[MAX_NAME_LENGTH*2+1];
 	SQL_QuoteString(g_hDb, szPlayerName, szName, MAX_NAME_LENGTH*2+1);
 	
-	Format(szQuery, 255, sql_resetPlayerCheckpoints, szName);
+	Format(szQuery, 255, sql_resetPlayerCheckpoints, szName, g_szMapName);
 	
 	SQL_LockDatabase(g_hDb);
 	SQL_FastQuery(g_hDb, szQuery);
@@ -961,7 +968,7 @@ public db_resetMapRecords(client, String:szMapName[MAX_MAP_LENGTH]){
 	decl String:szQuery[255];
 	
 	Format(szQuery, 255, sql_resetMapRecords, szMapName);
-	
+
 	SQL_LockDatabase(g_hDb);
 	SQL_FastQuery(g_hDb, szQuery);
 	SQL_UnlockDatabase(g_hDb);
@@ -985,7 +992,7 @@ public db_resetPlayerRecords(client, String:szPlayerName[MAX_NAME_LENGTH]){
 	decl String:szName[MAX_NAME_LENGTH*2+1];
 	SQL_QuoteString(g_hDb, szPlayerName, szName, MAX_NAME_LENGTH*2+1);
 	
-	Format(szQuery, 255, sql_resetPlayerRecords, szPlayerName);
+	Format(szQuery, 255, sql_resetPlayerRecords, szPlayerName, g_szMapName);
 	
 	SQL_LockDatabase(g_hDb);
 	SQL_FastQuery(g_hDb, szQuery);
