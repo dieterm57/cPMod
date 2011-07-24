@@ -39,12 +39,11 @@ public Action:Event_player_spawn(Handle:event, const String:name[], bool:dontBro
 		SetEntData(client, FindSendPropOffs("CBaseEntity", "m_CollisionGroup"), 2, 4, true);
 		g_bBlocking[client] = false;
 	}
-	//if player alpha enabled
-	if(g_bAlpha){
-		//set player translucent
-		SetEntityRenderMode(client, RENDER_TRANSCOLOR);
-		SetEntityRenderColor(client, 255,255,255,70);
-	}
+
+	//set player translucent
+	SetEntityRenderMode(client, RENDER_TRANSCOLOR);
+	SetEntityRenderColor(client, 255,255,255,g_Alpha);
+
 	//if auto flash enabled
 	if(g_bAutoFlash)
 		//give the player a first flash
@@ -117,6 +116,19 @@ public Action:Event_weapon_fire(Handle:event,const String:name[],bool:dontBroadc
 		GivePlayerItem(client, "weapon_flashbang");
 }
 
+//------------------------//
+// player visibility hook //
+//------------------------//
+public Action:SetTransmit(entity, client){
+		/*if(client != entity && (0 < entity <= MaxClients) && g_bHidden[client])
+			return Plugin_Handled;
+		
+		return Plugin_Continue;*/
+	if( client == entity )
+		return Plugin_Continue;
+	return Plugin_Handled;
+}
+
 //--------------------//
 // clean timer action //
 //--------------------//
@@ -127,7 +139,7 @@ public Action:ActionCleanTimer(Handle:timer, any:client){
 		if(IsValidEdict(i) && IsValidEntity(i)){
 			GetEdictClassname(i, name, sizeof(name));
 			//if((StrContains(name, "weapon_") != -1 || StrContains(name, "item_") != -1 ) && GetEntDataEnt2(i, g_WeaponParent) == -1)
-			if((StrContains(name, "weapon_scout") != -1 || StrContains(name, "item_") != -1 ) && GetEntDataEnt2(i, g_WeaponParent) == -1)
+			if((StrContains(name, "weapon_scout") != -1 || StrContains(name, "weapon_usp") != -1 || StrContains(name, "item_") != -1 ) && GetEntDataEnt2(i, g_WeaponParent) == -1)
 				//segmentation error if map end??
 				RemoveEdict(i);
 		}

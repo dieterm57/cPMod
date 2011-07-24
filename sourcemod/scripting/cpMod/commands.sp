@@ -35,6 +35,10 @@ public Action:Client_Block(client, args){
 	ToogleBlock(client); 
 	return Plugin_Handled;
 }
+public Action:Client_Hide(client, args){
+	ToogleHiding(client); 
+	return Plugin_Handled;
+}
 public Action:Client_Lowgrav(client, args){
 	ClientGravity(client,0.5); 
 	return Plugin_Handled;
@@ -45,6 +49,10 @@ public Action:Client_Normalgrav(client, args){
 }
 public Action:Client_Scout(client, args){
 	ScoutClient(client); 
+	return Plugin_Handled;
+}
+public Action:Client_Usp(client, args){
+	UspClient(client); 
 	return Plugin_Handled;
 }
 
@@ -203,16 +211,38 @@ public ToogleBlock(client){
 	if(g_bNoBlock && g_bPlayerBlock){
 		//depending on current blocking state
 		if(g_bBlocking[client]){
-			SetEntData(client, FindSendPropOffs("CBaseEntity", "m_CollisionGroup"), 2, 4, true);
 			g_bBlocking[client] = false;
+			SetEntData(client, FindSendPropOffs("CBaseEntity", "m_CollisionGroup"), 2, 4, true);
 			PrintToChat(client, "%t", "BlockingDisabled", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
 		}else{
-			SetEntData(client, FindSendPropOffs("CBaseEntity", "m_CollisionGroup"), 5, 4, true);
 			g_bBlocking[client] = true;
+			SetEntData(client, FindSendPropOffs("CBaseEntity", "m_CollisionGroup"), 5, 4, true);
 			PrintToChat(client, "%t", "BlockingEnabled", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
 		}
 	}else //noblock disabled
 		PrintToChat(client, "%t", "NoblockDisabled", YELLOW,LIGHTGREEN,YELLOW);
+}
+
+//----------------------//
+// toogle hiding method //
+//----------------------//
+public ToogleHiding(client){
+	//if no valid player
+	if(!IsPlayerAlive(client) || GetClientTeam(client) == 1)
+		return;
+	
+	//if hiding enabled
+	if(g_bPlayerHide){
+		//depending on current blocking state
+		if(g_bHidden[client]){
+			g_bHidden[client] = false;
+			PrintToChat(client, "%t", "PlayerVisible", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
+		}else{
+			g_bHidden[client] = true;
+			PrintToChat(client, "%t", "PlayerHidden", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
+		}
+	}else //noblock disabled
+		PrintToChat(client, "%t", "HidingDisabled", YELLOW,LIGHTGREEN,YELLOW);
 }
 
 //---------------------//
@@ -224,13 +254,32 @@ public ScoutClient(client){
 		return;
 		
 	//if scounts given smaller than the limit
-	if(g_Scouts[client] < g_ScoutLimit){
+	if(g_Scouts[client] < g_GunLimit){
 		//spawn a scout
 		GivePlayerItem(client, "weapon_scout");
-		g_Scouts[client] ++;
-		PrintToChat(client, "%t", "ScoutGiven", YELLOW,LIGHTGREEN,YELLOW);
+		g_Scouts[client]++;
+		PrintToChat(client, "%t", "WeaponGiven", YELLOW,LIGHTGREEN,YELLOW,"Scout");
 	}else //limit reached
-		PrintToChat(client, "%t", "ScoutLimit", YELLOW,LIGHTGREEN,YELLOW);
+		PrintToChat(client, "%t", "GunLimit", YELLOW,LIGHTGREEN,YELLOW,"Scouts");
+}
+
+//---------------------//
+// usp client method //
+//---------------------//
+public UspClient(client){
+	//if no valid player
+	if(!IsPlayerAlive(client) || GetClientTeam(client) == 1)
+		return;
+	
+		
+	//if scounts given smaller than the limit
+	if(g_Usps[client] < g_GunLimit){
+		//spawn a scout
+		GivePlayerItem(client, "weapon_usp");
+		g_Usps[client]++;
+		PrintToChat(client, "%t", "WeaponGiven", YELLOW,LIGHTGREEN,YELLOW,"Usp");
+	}else //limit reached
+		PrintToChat(client, "%t", "GunLimit", YELLOW,LIGHTGREEN,YELLOW,"Usps");
 }
 
 //-----------------------//
@@ -393,17 +442,6 @@ public ClearClient(client){
 		g_CurrentCp[client] = -1;
 		g_WholeCp[client] = 0;
 		
-		//@deprecated
-		/* superfluous
-		for(new i = 0; i < CPLIMIT; i++){
-			g_fPlayerCords[client][i][0]=0.0;
-			g_fPlayerCords[client][i][1]=0.0;
-			g_fPlayerCords[client][i][2]=0.0;
-			g_fPlayerAngles[client][i][0]=0.0;
-			g_fPlayerAngles[client][i][1]=0.0;
-			g_fPlayerAngles[client][i][2]=0.0;
-		}*/
-		
 		PrintToChat(client, "%t", "Cleared", YELLOW,LIGHTGREEN,YELLOW);
 	}else //plugin disabled
 		PrintToChat(client, "%t", "PluginDisabled", YELLOW,LIGHTGREEN,YELLOW);
@@ -427,11 +465,13 @@ public HelpPanel(client){
 	DrawPanelText(panel, "!tele - Teleports you to last checkpoint");
 	DrawPanelText(panel, " ");
 	DrawPanelText(panel, "!block - Toogles your blocking");
+	DrawPanelText(panel, "!hide - Toogles player visibility");
 	DrawPanelText(panel, "!lowgrav - Lowers your gravity");
 	DrawPanelText(panel, "!normalgrav - Normals your gravity");
 	DrawPanelText(panel, "!record - Displays your record");
 	DrawPanelText(panel, "!restart - Restarts your timer");
-	DrawPanelText(panel, "!scout - Gives you a scout");
+	//DrawPanelText(panel, "!scout - Gives you a Scout");
+	//DrawPanelText(panel, "!usp - Gives you a Usp");
 	DrawPanelText(panel, "!stop - Stops the timer");
 	DrawPanelText(panel, "!wr - Displays the record of this map");
 	DrawPanelItem(panel, "exit");

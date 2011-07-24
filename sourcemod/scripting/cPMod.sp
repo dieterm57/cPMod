@@ -31,7 +31,7 @@
 
 /*
 [cP mod]
-- version 2.0.5b
+- version 2.0.6b
 
 This plugin allows users to save their location and teleport later.
 It further provides some features for non skilled bHopper like low gravity or a scout.
@@ -53,7 +53,9 @@ Cmds:
 
 !help       - Displays the help menu
 !block      - Toogles blocking
+!hide				- Toobles player visibility
 !scout      - Spawns a scout
+!usp				- Spawns a usp
 !lowgrav    - Sets player gravity to low
 !normalgrav - Sets player gravity to default
 
@@ -70,10 +72,10 @@ sm_cp_cleanupguns  - <1|0> Enable/Disable automatic removal of scouts.
 sm_cp_timer        - <1|0> Enable/Disable map based timer.
 sm_cp_restore      - <1|0> Enable/Disable automatic saving of checkpoints to database.
 sm_cp_noblock      - <1|0> Enable/Disable player blocking.
-sm_cp_alpha        - <1|0> Enable/Disable player alpha.
+sm_cp_alpha        - <0|255> Sets player alpha (0=invisible - 255=visible).
 sm_cp_autoflash    - <1|0> Enable/Disable auto flashbang giver.
 sm_cp_tracer       - <1|0> Enable/Disable admin tracer.
-sm_cp_scoutlimit   - <0|10> Sets the scout limit for each player.
+sm_cp_gunlimit     - <0|10> Sets the gun limit for each player.
 sm_cp_gravity      - <1|0> Enable/Disable player gravity.
 sm_cp_healclient   - <1|0> Enable/Disable healing of falldamage.
 sm_cp_hintsound    - <1|0> Enable/Disable playing sound on popup.
@@ -187,10 +189,18 @@ Versions
     - Added precord <name> <mapname> command
     - Enhanced record command to record <mapname>
     - Various details changed
+2.0.6
+		- Added !usp command
+		- Added !hide command
+		- Changed sm_cp_alpha to set a value from 0 to 255
+		- Changed sm_cp_scoutlimit to sm_cp_gunlimit
+    - Fixed multiple client 0 invalid errors
+    - Fixed sm_resetplayerrecords and sm_resetplayercheckpoints for current map only
 */
 
 #include <sourcemod>
 #include <sdktools>
+#include <sdkhooks>
 
 #undef REQUIRE_EXTENSIONS
 #include <cstrike>
@@ -206,10 +216,11 @@ Versions
 // nothing to change over here //
 //-----------------------------//
 //...
-#define VERSION "2.0.5"
+#define VERSION "2.0.6b"
 
 #define YELLOW 0x01
 #define TEAMCOLOR 0x02
+
 #define LIGHTGREEN 0x03
 #define GREEN 0x04
 
@@ -251,14 +262,16 @@ new Handle:g_hcvarNoBlock = INVALID_HANDLE;
 new bool:g_bNoBlock = false;
 new Handle:g_hcvarPlayerBlock = INVALID_HANDLE;
 new bool:g_bPlayerBlock = false;
+new Handle:g_hcvarPlayerHide = INVALID_HANDLE;
+new bool:g_bPlayerHide = false;
 new Handle:g_hcvarAlpha = INVALID_HANDLE;
-new bool:g_bAlpha = false;
+new g_Alpha = 255;
 new Handle:g_hcvarAutoFlash = INVALID_HANDLE
 new bool:g_bAutoFlash = false;
 new Handle:g_hcvarTracer = INVALID_HANDLE;
 new bool:g_bTracer = false;
-new Handle:g_hcvarScoutLimit = INVALID_HANDLE;
-new g_ScoutLimit = 0;
+new Handle:g_hcvarGunLimit = INVALID_HANDLE;
+new g_GunLimit = 0;
 new Handle:g_hcvarGravity = INVALID_HANDLE;
 new bool:g_bGravity = false;
 new Handle:g_hcvarHealClient = INVALID_HANDLE;
@@ -290,11 +303,12 @@ new Float:g_fMapTimer_end1_cords[3];
 new Float:g_fPlayerCords[MAXPLAYERS+1][CPLIMIT][3];
 new Float:g_fPlayerAngles[MAXPLAYERS+1][CPLIMIT][3];
 
-
 new g_CurrentCp[MAXPLAYERS+1];
 new g_WholeCp[MAXPLAYERS+1];
 new bool:g_bBlocking[MAXPLAYERS+1];
+new bool:g_bHidden[MAXPLAYERS+1];
 new g_Scouts[MAXPLAYERS+1];
+new g_Usps[MAXPLAYERS+1];
 new g_RunTime[MAXPLAYERS+1];
 new g_RunJumps[MAXPLAYERS+1];
 new String:g_szMapName[MAX_MAP_LENGTH];
@@ -303,6 +317,7 @@ new g_RecordJumps;
 new g_RecordTime;
 
 new g_BeamSpriteFollow, g_BeamSpriteRing1,g_BeamSpriteRing2;
+new bool:g_bCpPanelOpen = false;
 
 
 //----------//
@@ -355,18 +370,21 @@ public OnPluginStart(){
 	g_hcvarNoBlock    = CreateConVar("sm_cp_noblock", "1", "Enable/Disable player blocking.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
 	g_bNoBlock        = GetConVarBool(g_hcvarNoBlock);
 	HookConVarChange(g_hcvarNoBlock, OnSettingChanged);
-	
 	g_hcvarPlayerBlock = CreateConVar("sm_cp_playerblock", "1", "Enable/Disable player !block command.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
 	g_bPlayerBlock     = GetConVarBool(g_hcvarPlayerBlock);
 	HookConVarChange(g_hcvarPlayerBlock, OnSettingChanged);
+
+	g_hcvarPlayerHide = CreateConVar("sm_cp_playerhide", "1", "Enable/Disable player !hide command.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	g_bPlayerHide     = GetConVarBool(g_hcvarPlayerHide);
+	HookConVarChange(g_hcvarPlayerHide, OnSettingChanged);
 	
-	g_hcvarAlpha      = CreateConVar("sm_cp_alpha", "1", "Enable/Disable player alpha.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
-	g_bAlpha          = GetConVarBool(g_hcvarAlpha);
+	g_hcvarAlpha      = CreateConVar("sm_cp_alpha", "70", "<0|255> Sets player alpha (0=invisible - 255=visible).", FCVAR_PLUGIN, true, 0.0, true, 255.0);
+	g_Alpha          = GetConVarInt(g_hcvarAlpha);
 	HookConVarChange(g_hcvarAlpha, OnSettingChanged);
 	g_hcvarAutoFlash  = CreateConVar("sm_cp_autoflash", "0", "Enable/Disable auto flashbang giver.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
 	g_bAutoFlash      = GetConVarBool(g_hcvarAutoFlash);
 	HookConVarChange(g_hcvarAutoFlash, OnSettingChanged);
-	if(g_hcvarAutoFlash){
+	if(g_bAutoFlash){
 		HookEvent("player_blind" , Event_flashbang_detonate);
 		HookEvent("weapon_fire" , Event_weapon_fire);
 	}
@@ -374,9 +392,9 @@ public OnPluginStart(){
 	g_bTracer         = GetConVarBool(g_hcvarTracer);
 	HookConVarChange(g_hcvarTracer, OnSettingChanged);
 	
-	g_hcvarScoutLimit = CreateConVar("sm_cp_scoutlimit", "3", "Sets the scout limit for each player. 0 to disable.", FCVAR_PLUGIN, true, 0.0, true, 10.0);
-	g_ScoutLimit      = GetConVarInt(g_hcvarScoutLimit);
-	HookConVarChange(g_hcvarScoutLimit, OnSettingChanged);
+	g_hcvarGunLimit = CreateConVar("sm_cp_gunlimit", "3", "Sets the gun limit for each player. 0 to disable.", FCVAR_PLUGIN, true, 0.0, true, 10.0);
+	g_GunLimit      = GetConVarInt(g_hcvarGunLimit);
+	HookConVarChange(g_hcvarGunLimit, OnSettingChanged);
 	
 	g_hcvarGravity    = CreateConVar("sm_cp_gravity", "1", "Enable/Disable player gravity.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
 	g_bGravity        = GetConVarBool(g_hcvarGravity);
@@ -385,7 +403,7 @@ public OnPluginStart(){
 	g_hcvarHealClient = CreateConVar("sm_cp_healclient", "1", "Enable/Disable healing of damage.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
 	g_bHealClient     = GetConVarBool(g_hcvarHealClient);
 	HookConVarChange(g_hcvarHealClient, OnSettingChanged);
-	if(g_hcvarHealClient)
+	if(g_bHealClient)
 		HookEvent("player_hurt", Event_player_hurt);
 	
 	g_hcvarHintSound = CreateConVar("sm_cp_hintsound", "0", "Enable/Disable playing sound on popup.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
@@ -405,9 +423,11 @@ public OnPluginStart(){
 	HookConVarChange(g_hcvarSpeedUnit, OnSettingChanged);
 	
 	RegConsoleCmd("sm_block", Client_Block, "Toogles blocking");
+	RegConsoleCmd("sm_hide", Client_Hide, "Toogles hiding");
 	RegConsoleCmd("sm_lowgrav", Client_Lowgrav, "Sets player gravity to low");
 	RegConsoleCmd("sm_normalgrav", Client_Normalgrav, "Sets player gravity to default");
 	RegConsoleCmd("sm_scout", Client_Scout, "Spawns a scout");
+	RegConsoleCmd("sm_usp", Client_Usp, "Spawns a usp");
 	
 	RegConsoleCmd("sm_next", Client_Next, "Next checkpoint");
 	RegConsoleCmd("sm_prev", Client_Prev, "Previous checkpoint");
@@ -481,7 +501,8 @@ public OnMapStart(){
 
 public setupRecordSound(){
 	//if string not empty
-	if(strlen(g_szRecordSound) != 0){
+	new length = strlen(g_szRecordSound);
+	if(length != 0){
 		decl String:szDownloadFile[PLATFORM_MAX_PATH];
 		Format(szDownloadFile, PLATFORM_MAX_PATH, "sound/%s", g_szRecordSound);
 		AddFileToDownloadsTable(szDownloadFile);
@@ -492,28 +513,33 @@ public setupRecordSound(){
 		g_bRecordSound = false;
 }
 
-/*//------------------------//
+//------------------------//
 // executed on end of map //
 //------------------------//
 public OnMapEnd(){
+	new max = GetMaxClients();
 	//for all of the players
-	for(new i = 0; i <= MAXPLAYERS; i++){
-		//if checkpoint restoring and valid checkpoint
-		if(g_bRestore && current != -1){
-			//update the checkpoint in the database
-			db_updatePlayerCheckpoint(client, current);
-		}
+	for(new i = 0; i <= max; i++){
+		//if client valid
+		if(i != 0 && IsClientInGame(i) && !IsFakeClient(i)){
+			new current = g_CurrentCp[i];
+			//if checkpoint restoring and valid checkpoint
+			if(g_bRestore && current != -1){
+				//update the checkpoint in the database
+				db_updatePlayerCheckpoint(i, current);
+			}
 		
-		//if a tracer still active: close it!
-		if(g_bTracer && g_hTraceTimer[i] != INVALID_HANDLE){
-			CloseHandle(g_hTraceTimer[i]);
-			g_hTraceTimer[i] = INVALID_HANDLE;
-		}
+			//if a tracer still active: close it!
+			if(g_bTracer && g_hTraceTimer[i] != INVALID_HANDLE){
+				CloseHandle(g_hTraceTimer[i]);
+				g_hTraceTimer[i] = INVALID_HANDLE;
+			}
 		
-		//if a timer still active: close it!
-		if(g_bTimer && g_hMapTimer[i] != INVALID_HANDLE){
-			CloseHandle(g_hMapTimer[i]);
-			g_hMapTimer[i] = INVALID_HANDLE;
+			//if a timer still active: close it!
+			if(g_bTimer && g_hMapTimer[i] != INVALID_HANDLE){
+				CloseHandle(g_hMapTimer[i]);
+				g_hMapTimer[i] = INVALID_HANDLE;
+			}
 		}
 	}
 	
@@ -522,7 +548,7 @@ public OnMapEnd(){
 		CloseHandle(g_hCleanTimer);
 		g_hCleanTimer = INVALID_HANDLE;
 	}
-}*/
+}
 
 //-----------------------------------//
 // hook executed on changed settings //
@@ -569,15 +595,25 @@ public OnSettingChanged(Handle:convar, const String:oldValue[], const String:new
 		else
 			g_bNoBlock = false;
 	}else if(convar == g_hcvarPlayerBlock){
-		if(newValue[0] == '1')
+		if(newValue[0] == '1'){
 			g_bPlayerBlock = true;
-		else
+			for(new i=0; i<=MAXPLAYERS; i++){
+				SDKHook(i, SDKHook_SetTransmit, SetTransmit);
+			}
+		}else{
 			g_bPlayerBlock = false;
-	}else if(convar == g_hcvarAlpha){
+			new max = GetMaxClients();
+			for(new i=0; i<=max; i++){
+				SDKUnhook(i, SDKHook_SetTransmit, SetTransmit);
+			}
+		}
+	}else if(convar == g_hcvarPlayerHide){
 		if(newValue[0] == '1')
-			g_bAlpha = true;
+			g_bPlayerHide = true;
 		else
-			g_bAlpha = false;
+			g_bPlayerHide = false;
+	}else if(convar == g_hcvarAlpha){
+		g_Alpha = StringToInt(newValue[0]);
 	}else if(convar == g_hcvarAutoFlash){
 		if(newValue[0] == '1'){
 			g_bAutoFlash = true;
@@ -598,8 +634,8 @@ public OnSettingChanged(Handle:convar, const String:oldValue[], const String:new
 				g_hTraceTimer[i] = INVALID_HANDLE;
 			}
 		}
-	}else if(convar == g_hcvarScoutLimit){
-		g_ScoutLimit = newValue[0];
+	}else if(convar == g_hcvarGunLimit){
+		g_GunLimit = StringToInt(newValue[0]);
 	}else if(convar == g_hcvarGravity){
 		if(newValue[0] == '1')
 			g_bGravity = true;
@@ -653,6 +689,10 @@ public OnClientPostAdminCheck(client){
 		if(g_bRestore)
 			db_selectPlayerCheckpoint(client);
 		
+		//if visibility
+		if(g_bPlayerHide)
+			SDKHook(client, SDKHook_SetTransmit, SetTransmit);
+
 		//display the help panel
 		HelpPanel(client);
 	}
@@ -664,7 +704,6 @@ public OnClientPostAdminCheck(client){
 public OnClientDisconnect(client){
 	if(g_bEnabled){
 		new current = g_CurrentCp[client];
-		
 		//if checkpoint restoring and valid checkpoint
 		if(g_bRestore && current != -1){
 			//update the checkpoint in the database
