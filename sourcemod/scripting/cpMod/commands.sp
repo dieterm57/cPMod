@@ -260,7 +260,7 @@ public ScoutClient(client){
 		g_Scouts[client]++;
 		PrintToChat(client, "%t", "WeaponGiven", YELLOW,LIGHTGREEN,YELLOW,"Scout");
 	}else //limit reached
-		PrintToChat(client, "%t", "GunLimit", YELLOW,LIGHTGREEN,YELLOW,"Scouts");
+		PrintToChat(client, "%t", "WeaponLimit", YELLOW,LIGHTGREEN,YELLOW,"Scouts");
 }
 
 //---------------------//
@@ -279,7 +279,7 @@ public UspClient(client){
 		g_Usps[client]++;
 		PrintToChat(client, "%t", "WeaponGiven", YELLOW,LIGHTGREEN,YELLOW,"Usp");
 	}else //limit reached
-		PrintToChat(client, "%t", "GunLimit", YELLOW,LIGHTGREEN,YELLOW,"Usps");
+		PrintToChat(client, "%t", "WeaponLimit", YELLOW,LIGHTGREEN,YELLOW,"Usps");
 }
 
 //-----------------------//

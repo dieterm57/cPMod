@@ -32,14 +32,11 @@
 // admin cp command hook //
 //-----------------------//
 public Action:Admin_CpPanel(client, args){
-	LogMessage("CpPanel open");
 	//if someone else setting up a timer
 	if(!g_bCpPanelOpen)
 		CpAdminPanel(client);
 	else
 		PrintToChat(client, "%t", "CpPanelInAccess", YELLOW,LIGHTGREEN,YELLOW);
-	
-	LogMessage("CpPanel close");
 	return Plugin_Handled;
 }
 //-------------------------//
@@ -49,8 +46,7 @@ public CpAdminPanel(client){
 	//if no valid player
 	if(client == 0 || !IsPlayerAlive(client) || GetClientTeam(client) == 1)
 		return;
-	
-	LogMessage("CpPanel display");
+
 	g_bCpPanelOpen = true;
 	//create the panel
 	new Handle:menu = CreateMenu(CpAdminPanelHandler);
@@ -286,8 +282,6 @@ public Action:Admin_PurgePlayer(client, args){
 		ReplyToCommand(client, "[SM] Usage: sm_purgeplayer <days>");
 		return Plugin_Handled;
 	}
-
-	LogMessage("purgeplayer");
 	
 	//create the database query
 	decl String:szDays[8];
@@ -300,7 +294,6 @@ public Action:Admin_PurgePlayer(client, args){
 // admin drop maps hook //
 //----------------------//
 public Action:Admin_DropMap(client, args){
-	LogMessage("dropMap");
 	db_dropMap(client);
 	return Plugin_Handled;
 }
@@ -309,8 +302,6 @@ public Action:Admin_DropMap(client, args){
 // admin drop players hook //
 //-------------------------//
 public Action:Admin_DropPlayer(client, args){
-	LogMessage("dropPlayer");
-
 	db_dropPlayer(client);
 	return Plugin_Handled;
 }
@@ -325,7 +316,6 @@ public Action:Admin_ResetMapTimer(client, args){
 		return Plugin_Handled;
 	}
 
-	LogMessage("resetMapTimer");
 	//create the database query
 	decl String:szMapName[MAX_MAP_LENGTH];
 	GetCmdArg(1, szMapName, MAX_MAP_LENGTH);
@@ -337,7 +327,6 @@ public Action:Admin_ResetMapTimer(client, args){
 // admin reset checkpoints hook //
 //------------------------------//
 public Action:Admin_ResetCheckpoints(client, args){
-	LogMessage("resetCheckpoints");
 	db_resetCheckpoints(client);
 	return Plugin_Handled;
 }
@@ -350,8 +339,7 @@ public Action:Admin_ResetMapCheckpoints(client, args){
 		ReplyToCommand(client, "[SM] Usage: sm_resetmapcheckpoints <mapname>");
 		return Plugin_Handled;
 	}
-	
-	LogMessage("resetMapCheckpoints");
+
 	//create the database query
 	decl String:szMapName[MAX_MAP_LENGTH];
 	GetCmdArg(1, szMapName, MAX_MAP_LENGTH);
@@ -371,8 +359,7 @@ public Action:Admin_ResetPlayerCheckpoints(client, args){
 		ReplyToCommand(client, "[SM] Usage: sm_resetplayercheckpoints <playername>");
 		return Plugin_Handled;
 	}
-	
-	LogMessage("resetPlayerCheckpoints");
+
 	//create the database query
 	decl String:szPlayerName[MAX_NAME_LENGTH];
 	GetCmdArg(1, szPlayerName, MAX_NAME_LENGTH);
@@ -384,7 +371,6 @@ public Action:Admin_ResetPlayerCheckpoints(client, args){
 // admin reset records hook //
 //--------------------------//
 public Action:Admin_ResetRecords(client, args){
-	LogMessage("resetRecords");
 	db_resetRecords(client);
 	return Plugin_Handled;
 }
@@ -397,8 +383,7 @@ public Action:Admin_ResetMapRecords(client, args){
 		ReplyToCommand(client, "[SM] Usage: sm_resetmaprecords <mapname>");
 		return Plugin_Handled;
 	}
-	
-	LogMessage("resetMapRecords");
+
 	//create the database query
 	decl String:szMapName[MAX_MAP_LENGTH];
 	GetCmdArg(1, szMapName, MAX_MAP_LENGTH);
@@ -414,8 +399,7 @@ public Action:Admin_ResetPlayerRecords(client, args){
 		ReplyToCommand(client, "[SM] Usage: sm_resetplayerrecords <playername>");
 		return Plugin_Handled;
 	}
-	
-	LogMessage("resetPlayerRecords");
+
 	//create the database query
 	decl String:szPlayerName[MAX_NAME_LENGTH];
 	GetCmdArg(1, szPlayerName, MAX_NAME_LENGTH);

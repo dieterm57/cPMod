@@ -152,7 +152,7 @@
 		"de"        "{1}[{2}cP{3} Mod] Dir wurde eine {4} gegeben."
 		"ru"        "{1}[{2}cP{3} Mod] Вы получили {4}."
 	}
-	"GunLimit"
+	"WeaponLimit"
 	{
 		"#format"   "{1:c},{2:c},{3:c},{4:s}"
 		"en"        "{1}[{2}cP{3} Mod] No more {4} for you!"
