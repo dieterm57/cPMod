@@ -63,7 +63,6 @@ public Action:Event_player_spawn(Handle:event, const String:name[], bool:dontBro
 	new AdminId:aid = GetUserAdmin(client);
 	//if the player is an admin
 	if(aid != INVALID_ADMIN_ID && GetAdminFlag(aid, Admin_Generic)){
-		
 		//if player tracer enabled and not allready started
 		if(g_bTracer && g_hTraceTimer[client] == INVALID_HANDLE)
 			//give him a nice tracer
@@ -122,8 +121,8 @@ public Action:Event_weapon_fire(Handle:event,const String:name[],bool:dontBroadc
 public Action:SetTransmit(entity, client){
 		/*if(client != entity && (0 < entity <= MaxClients) && g_bHidden[client])
 			return Plugin_Handled;
-		
 		return Plugin_Continue;*/
+
 	if( client == entity )
 		return Plugin_Continue;
 	return Plugin_Handled;

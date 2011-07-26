@@ -216,7 +216,7 @@ Versions
 // nothing to change over here //
 //-----------------------------//
 //...
-#define VERSION "2.0.6b"
+#define VERSION "2.0.6b2"
 
 #define YELLOW 0x01
 #define TEAMCOLOR 0x02
@@ -521,7 +521,7 @@ public OnMapEnd(){
 	//for all of the players
 	for(new i = 0; i <= max; i++){
 		//if client valid
-		if(i != 0 && IsClientInGame(i) && !IsFakeClient(i)){
+		if(i != 0 && IsClientInGame(i) && !IsFakeClient(i) && IsClientConnected(i)){
 			new current = g_CurrentCp[i];
 			//if checkpoint restoring and valid checkpoint
 			if(g_bRestore && current != -1){
