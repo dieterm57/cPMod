@@ -119,13 +119,9 @@ public Action:Event_weapon_fire(Handle:event,const String:name[],bool:dontBroadc
 // player visibility hook //
 //------------------------//
 public Action:SetTransmit(entity, client){
-		/*if(client != entity && (0 < entity <= MaxClients) && g_bHidden[client])
+		if(client != entity && (0 < entity <= MaxClients) && g_bHidden[client])
 			return Plugin_Handled;
-		return Plugin_Continue;*/
-
-	if( client == entity )
 		return Plugin_Continue;
-	return Plugin_Handled;
 }
 
 //--------------------//

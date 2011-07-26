@@ -241,7 +241,7 @@ public ToogleHiding(client){
 			g_bHidden[client] = true;
 			PrintToChat(client, "%t", "PlayerHidden", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
 		}
-	}else //noblock disabled
+	}else //hiding disabled
 		PrintToChat(client, "%t", "HidingDisabled", YELLOW,LIGHTGREEN,YELLOW);
 }
 
