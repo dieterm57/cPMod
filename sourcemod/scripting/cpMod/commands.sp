@@ -324,12 +324,33 @@ public SaveClientLocation(client){
 				
 				//increase counters
 				g_CurrentCp[client] = g_WholeCp[client];
-				g_WholeCp[client] ++;
+				g_WholeCp[client]++;
 				
 				PrintToChat(client, "%t", "CpSaved", YELLOW,LIGHTGREEN,YELLOW,GREEN,whole+1,whole+1,YELLOW);
 				
 				EmitSoundToClient(client,"buttons/blip1.wav",client);
 				TE_SetupBeamRingPoint(g_fPlayerCords[client][whole],10.0,200.0,g_BeamSpriteRing1,0,0,10,1.0,50.0,0.0,{255,255,255,255},0,0);
+				TE_SendToClient(client);
+			}else if(g_bRotation && whole == CPLIMIT){ //cp rotation enabled
+				new current = g_CurrentCp[client];
+				
+				//if last slot reached
+				if(current+1 == CPLIMIT){
+					//reset to first slot
+					g_CurrentCp[client] = 0;
+					current = 0
+				}else{
+					g_CurrentCp[client]++;
+					current++;
+				}
+				
+				//save some data
+				GetClientAbsOrigin(client,g_fPlayerCords[client][current]);
+				GetClientAbsAngles(client,g_fPlayerAngles[client][current]);
+				PrintToChat(client, "%t", "CpSaved", YELLOW,LIGHTGREEN,YELLOW,GREEN,current+1,whole,YELLOW);
+				
+				EmitSoundToClient(client,"buttons/blip1.wav",client);
+				TE_SetupBeamRingPoint(g_fPlayerCords[client][current],10.0,200.0,g_BeamSpriteRing1,0,0,10,1.0,50.0,0.0,{255,255,255,255},0,0);
 				TE_SendToClient(client);
 			}else //checkpoint limit
 				PrintToChat(client, "%t", "CpLimit", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
@@ -353,7 +374,7 @@ public TeleClient(client,pos){
 			new current = g_CurrentCp[client];
 			new whole = g_WholeCp[client];
 			
-			//if on last slot go to next
+			//if on last slot and next
 			if(current == whole-1 && pos == 1){
 				//reset to first
 				g_CurrentCp[client] = -1;

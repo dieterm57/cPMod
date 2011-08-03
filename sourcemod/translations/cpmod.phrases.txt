@@ -27,10 +27,10 @@
 	"CheckpointRestored"
 	{
 		"#format"   "{1:c},{2:c},{3:c},{4:c},{5:c}"
-		"en"        "{1}[{2}cP{3} Mod] Cp restored. Type {4}!tele{5} to teleport."
-		"fr"        "{1}[{2}cP{3} Mod] Cp restaurée. Tapez {4}!tele{5} pour se téléporter."
-		"de"        "{1}[{2}cP{3} Mod] Cp wiederhergestellt. Gib {4}!tele{5} ein um zu teleportieren."
-		"ru"        "{1}[{2}cP{3} Mod] Cp восстановлены. Напишите {4}!tele{5} чтобы телепортироваться."
+		"en"        "{1}[{2}cP{3} Mod] cp restored. Type {4}!tele{5} to teleport."
+		"fr"        "{1}[{2}cP{3} Mod] cp restaurée. Tapez {4}!tele{5} pour se téléporter."
+		"de"        "{1}[{2}cP{3} Mod] cp wiederhergestellt. Gib {4}!tele{5} ein um zu teleportieren."
+		"ru"        "{1}[{2}cP{3} Mod] cp восстановлены. Напишите {4}!tele{5} чтобы телепортироваться."
 	}
 	"TimerDisabled"
 	{
