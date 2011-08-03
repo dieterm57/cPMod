@@ -70,6 +70,7 @@ Cvars:
 sm_cp_enabled      - <1|0> Enable/Disable the plugin.
 sm_cp_cleanupguns  - <1|0> Enable/Disable automatic removal of scouts.
 sm_cp_timer        - <1|0> Enable/Disable map based timer.
+sm_cp_rotation     - <1|0> Enable/Disable automatic checkpoint rotation.
 sm_cp_restore      - <1|0> Enable/Disable automatic saving of checkpoints to database.
 sm_cp_noblock      - <1|0> Enable/Disable player blocking.
 sm_cp_alpha        - <0|255> Sets player alpha (0=invisible - 255=visible).
@@ -192,10 +193,12 @@ Versions
 2.0.6
 		- Added !usp command
 		- Added !hide command
+    - Added sm_cp_rotation cvar
 		- Changed sm_cp_alpha to set a value from 0 to 255
 		- Changed sm_cp_scoutlimit to sm_cp_gunlimit
     - Fixed multiple client 0 invalid errors
     - Fixed sm_resetplayerrecords and sm_resetplayercheckpoints for current map only
+    - Fixed sm_cp_speedunit km/h rounding issue
 */
 
 #include <sourcemod>
@@ -216,7 +219,7 @@ Versions
 // nothing to change over here //
 //-----------------------------//
 //...
-#define VERSION "2.0.6b2"
+#define VERSION "2.0.6b3"
 
 #define YELLOW 0x01
 #define TEAMCOLOR 0x02
@@ -252,6 +255,8 @@ new Handle:g_hcvarTimer = INVALID_HANDLE;
 new bool:g_bTimer = false;
 new Handle:g_hcvarRecordType = INVALID_HANDLE;
 new g_bRecordType = RECORD_TIME;
+new Handle:g_hcvarRotation = INVALID_HANDLE;
+new bool:g_bRotation = false;
 
 new bool:g_bStartCordsSet = false;
 new bool:g_bStopCordsSet = false;
@@ -303,7 +308,9 @@ new Float:g_fMapTimer_end1_cords[3];
 new Float:g_fPlayerCords[MAXPLAYERS+1][CPLIMIT][3];
 new Float:g_fPlayerAngles[MAXPLAYERS+1][CPLIMIT][3];
 
+//0-based number of current checkpoint in the storage array
 new g_CurrentCp[MAXPLAYERS+1];
+//amount of checkpoints available
 new g_WholeCp[MAXPLAYERS+1];
 new bool:g_bBlocking[MAXPLAYERS+1];
 new bool:g_bHidden[MAXPLAYERS+1];
@@ -362,6 +369,9 @@ public OnPluginStart(){
 	g_hcvarRecordType = CreateConVar("sm_cp_recordtype", "0", "Sets recordtype to time(0) or jumps(1).", FCVAR_PLUGIN, true, 0.0, true, 1.0);
 	g_bRecordType     = GetConVarInt(g_hcvarRecordType);
 	HookConVarChange(g_hcvarRecordType, OnSettingChanged);
+	g_hcvarRotation = CreateConVar("sm_cp_cprotation", "0", "<Enable/Disable automatic checkpoint rotation.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	g_bRotation     = GetConVarBool(g_hcvarRotation);
+	HookConVarChange(g_hcvarRotation, OnSettingChanged);
 	
 	g_hcvarRestore    = CreateConVar("sm_cp_restore", "1", "Enable/Disable automatic saving of checkpoints to database.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
 	g_bRestore        = GetConVarBool(g_hcvarRestore);
@@ -573,6 +583,11 @@ public OnSettingChanged(Handle:convar, const String:oldValue[], const String:new
 		}
 	}else if(convar == g_hcvarRecordType){
 		g_bRecordType = newValue[0];
+	}else if(convar == g_hcvarRotation){
+		if(newValue[0] == '1')
+			g_bRotation = true;
+		else
+			g_bRotation = false;
 	}else if(convar == g_hcvarCleanupGuns){
 		if(newValue[0] == '1'){
 			g_bCleanupGuns = true;

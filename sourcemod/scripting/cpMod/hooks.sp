@@ -255,7 +255,7 @@ public Action:Action_MapTimer(Handle:timer, any:client){
 				new speed = RoundToFloor(SquareRoot(Pow(fVelocity[0],2.0)+Pow(fVelocity[1],2.0)+Pow(fVelocity[2],2.0)));
 				//display km/h or just units
 				if(g_bSpeedUnit){
-					speed *= 0.06858;
+					speed = RoundToFloor(speed*0.06858);
 					PrintHintText(client,"Your time: %s\nJumps: %s\nSpeed: %i Km/h",szTime,szJumps,speed);
 				} else
 					PrintHintText(client,"Your time: %s\nJumps: %s\nSpeed: %i units/s",szTime,szJumps,speed);
