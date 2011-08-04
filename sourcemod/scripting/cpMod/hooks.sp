@@ -115,15 +115,6 @@ public Action:Event_weapon_fire(Handle:event,const String:name[],bool:dontBroadc
 		GivePlayerItem(client, "weapon_flashbang");
 }
 
-//------------------------//
-// player visibility hook //
-//------------------------//
-public Action:SetTransmit(entity, client){
-		if(client != entity && (0 < entity <= MaxClients) && g_bHidden[client])
-			return Plugin_Handled;
-		return Plugin_Continue;
-}
-
 //--------------------//
 // clean timer action //
 //--------------------//
@@ -153,62 +144,25 @@ public Action:ActionTraceTimer(Handle:timer, any:client){
 		return Plugin_Stop;
 }
 
-//--------------------------//
-// player inside box method //
-//--------------------------//
-public IsInsideBox(Float:fPCords[3], pos){
-	new Float:fpx=fPCords[0];
-	new Float:fpy=fPCords[1];
-	new Float:fpz=fPCords[2];
+//--------------------//
+// draw zone timer action //
+//--------------------//
+public Action:ActionDrawZoneTimer(Handle:timer, any:client){
+	//draw start yellow
+	DrawBox(g_fCpSetBCords, g_fCpSetECords, 1.0, {255,255,0,255});
 	
-	decl Float:fbsx;
-	decl Float:fbsy;
-	decl Float:fbsz;
-	decl Float:fbex;
-	decl Float:fbey;
-	decl Float:fbez;
-	
-	//set variables depending on the zone
-	if(pos == POS_START){
-		fbsx=g_fMapTimer_start0_cords[0];
-		fbsy=g_fMapTimer_start0_cords[1];
-		fbsz=g_fMapTimer_start0_cords[2];
-		fbex=g_fMapTimer_start1_cords[0];
-		fbey=g_fMapTimer_start1_cords[1];
-		fbez=g_fMapTimer_start1_cords[2];
-	}else{
-		fbsx=g_fMapTimer_end0_cords[0];
-		fbsy=g_fMapTimer_end0_cords[1];
-		fbsz=g_fMapTimer_end0_cords[2];
-		fbex=g_fMapTimer_end1_cords[0];
-		fbey=g_fMapTimer_end1_cords[1];
-		fbez=g_fMapTimer_end1_cords[2];
-	}
-	
-	new bool:bX=false;
-	new bool:bY=false;
-	new bool:bZ=false;
-	
-	//check all possibilities
-	if(fbsx>fbex && fpx<=fbsx && fpx>=fbex)
-		bX=true;
-	else if(fbsx<fbex && fpx>=fbsx && fpx<=fbex)
-		bX=true;
-	
-	if(fbsy>fbey && fpy<=fbsy && fpy>=fbey)
-		bY=true;
-	else if(fbsy<fbey && fpy>=fbsy && fpy<=fbey)
-		bY=true;
-	
-	if(fbsz>fbez && fpz <= fbsz && fpz>=fbez)
-		bZ=true;
-	else if(fbsz<fbez && fpz>=fbsz && fpz<=fbez)
-		bZ=true;
-	
-	if(bX&&bY&&bZ)
-		return true;
-	
-	return false;
+	//draw finish green
+	DrawBox(g_fCpSetBCords, g_fCpSetECords, 1.0, {0,255,0,255});
+	return Plugin_Continue;
+}
+
+//------------------------//
+// player visibility hook //
+//------------------------//
+public Action:SetTransmit(entity, client){
+		if(client != entity && (0 < entity <= MaxClients) && g_bHidden[client])
+			return Plugin_Handled;
+		return Plugin_Continue;
 }
 
 //------------------//
@@ -222,9 +176,8 @@ public Action:Action_MapTimer(Handle:timer, any:client){
 		decl String:szTime[16];
 		decl String:szJumps[16];
 		
-		//if player is allready racing
+		//if player is not yet racing
 		if(g_bRacing[client] == false){
-			
 			//if player is in start zone
 			if(IsInsideBox(fPCords, POS_START)){
 				//set variables for racing
@@ -234,7 +187,7 @@ public Action:Action_MapTimer(Handle:timer, any:client){
 				PrintToChat(client, "%t", "TimerStarted", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
 			}
 		}else{ //racing?
-			//if player is still in start zone
+			//if player is again in start zone
 			if(IsInsideBox(fPCords, POS_START)){
 				//set variables for racing again
 				g_RunTime[client] = 0;
@@ -257,7 +210,7 @@ public Action:Action_MapTimer(Handle:timer, any:client){
 				if(g_bSpeedUnit){
 					speed = RoundToFloor(speed*0.06858);
 					PrintHintText(client,"Your time: %s\nJumps: %s\nSpeed: %i Km/h",szTime,szJumps,speed);
-				} else
+				}else
 					PrintHintText(client,"Your time: %s\nJumps: %s\nSpeed: %i units/s",szTime,szJumps,speed);
 				
 				//if playing hint sound disabled
@@ -332,4 +285,62 @@ public Action:Action_MapTimer(Handle:timer, any:client){
 		
 		return Plugin_Stop;
 	}
+}
+
+//--------------------------//
+// player inside box method //
+//--------------------------//
+public IsInsideBox(Float:fPCords[3], pos){
+	new Float:fpx=fPCords[0];
+	new Float:fpy=fPCords[1];
+	new Float:fpz=fPCords[2];
+	
+	decl Float:fbsx;
+	decl Float:fbsy;
+	decl Float:fbsz;
+	decl Float:fbex;
+	decl Float:fbey;
+	decl Float:fbez;
+	
+	//set variables depending on the zone
+	if(pos == POS_START){
+		fbsx=g_fMapTimer_start0_cords[0];
+		fbsy=g_fMapTimer_start0_cords[1];
+		fbsz=g_fMapTimer_start0_cords[2];
+		fbex=g_fMapTimer_start1_cords[0];
+		fbey=g_fMapTimer_start1_cords[1];
+		fbez=g_fMapTimer_start1_cords[2];
+	}else{
+		fbsx=g_fMapTimer_end0_cords[0];
+		fbsy=g_fMapTimer_end0_cords[1];
+		fbsz=g_fMapTimer_end0_cords[2];
+		fbex=g_fMapTimer_end1_cords[0];
+		fbey=g_fMapTimer_end1_cords[1];
+		fbez=g_fMapTimer_end1_cords[2];
+	}
+	
+	new bool:bX=false;
+	new bool:bY=false;
+	new bool:bZ=false;
+	
+	//check all possibilities
+	if(fbsx>fbex && fpx<=fbsx && fpx>=fbex)
+		bX=true;
+	else if(fbsx<fbex && fpx>=fbsx && fpx<=fbex)
+		bX=true;
+	
+	if(fbsy>fbey && fpy<=fbsy && fpy>=fbey)
+		bY=true;
+	else if(fbsy<fbey && fpy>=fbsy && fpy<=fbey)
+		bY=true;
+	
+	if(fbsz>fbez && fpz <= fbsz && fpz>=fbez)
+		bZ=true;
+	else if(fbsz<fbez && fpz>=fbsz && fpz<=fbez)
+		bZ=true;
+	
+	if(bX&&bY&&bZ)
+		return true;
+	
+	return false;
 }
