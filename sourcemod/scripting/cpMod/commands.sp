@@ -99,7 +99,6 @@ public Action:Client_Record(client, args){
 		RecordPanel(client, szMapName);
 	}else
 		RecordPanel(client, g_szMapName);
-	
 	return Plugin_Handled;
 }
 public Action:Client_Player_Record(client, args){
@@ -120,7 +119,6 @@ public Action:Client_Player_Record(client, args){
 		
 		PlayerRecordPanel(client, szPlayerName, szMapName);
 	}
-	
 	return Plugin_Handled;
 }
 public Action:Client_Restart(client, args){
@@ -147,7 +145,7 @@ public RecordPanel(client, String:szPlayerName[MAX_MAP_LENGTH]){
 // player record panel method //
 //----------------------------//
 public PlayerRecordPanel(client, String:szPlayerName[MAX_NAME_LENGTH], String:szMapName[MAX_MAP_LENGTH]){
-  db_viewPlayerRecord(client, szPlayerName, szMapName);
+	db_viewPlayerRecord(client, szPlayerName, szMapName);
 }
 
 //-------------------------//
@@ -270,7 +268,6 @@ public UspClient(client){
 	//if no valid player
 	if(!IsPlayerAlive(client) || GetClientTeam(client) == 1)
 		return;
-	
 		
 	//if scounts given smaller than the limit
 	if(g_Usps[client] < g_GunLimit){
@@ -292,12 +289,15 @@ public ClientGravity(client,Float:amount){
 		
 	//if player gravity is enabled
 	if(g_bGravity){
-		//set amount to the new value
-		SetEntityGravity(client, amount);
-		if(amount>=1.0)
-			PrintToChat(client, "%t", "GravityNormal", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
-		else
-			PrintToChat(client, "%t", "GravityLow", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
+		if(!g_bRacing[client]){
+			//set amount to the new value
+			SetEntityGravity(client, amount);
+			if(amount>=1.0)
+				PrintToChat(client, "%t", "GravityNormal", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
+			else
+				PrintToChat(client, "%t", "GravityLow", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
+		}else //client is on a race
+			PrintToChat(client, "%t", "TimerActiveProtection", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
 	}else //gravity disabled
 		PrintToChat(client, "%t", "GravityDisabled", YELLOW,LIGHTGREEN,YELLOW);
 }

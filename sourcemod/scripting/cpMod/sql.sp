@@ -70,7 +70,7 @@ new String:sql_resetMapTimer[] = "UPDATE map SET start0 = '0:0:0', start1 = '0:0
 
 new String:sql_resetCheckpoints[] = "UPDATE player SET cords = '0:0:0', angle = '0:0:0';";
 new String:sql_resetMapCheckpoints[] = "UPDATE player SET cords = '0:0:0', angle = '0:0:0' WHERE mapname = '%s';";
-new String:sql_resetPlayerCheckpoints[] = "UPDATE player SET cords = '0:0:0', angle = '0:0:0' WHERE name LIKE '%s' AND mapname LIKE '%s';";
+new String:sql_resetPlayerCheckpoints[] = "UPDATE player SET cords = '0:0:0', angle = '0:0:0' WHERE name LIKE '%s' AND mapname = '%s';";
 
 new String:sql_resetRecords[] = "UPDATE player SET jumps = '-1', runtime = '-1';";
 new String:sql_resetMapRecords[] = "UPDATE player SET jumps = '-1', runtime = '-1' WHERE mapname = '%s';";
@@ -921,27 +921,27 @@ public db_resetMapCheckpoints(client, String:szMapName[MAX_MAP_LENGTH]){
 	SQL_FastQuery(g_hDb, szQuery);
 	SQL_UnlockDatabase(g_hDb);
 	
-	PrintToConsole(client, "MapCheckpointTable cleared.");
-	LogMessage("MapCheckpointTable cleared.");
+	PrintToConsole(client, "MapCheckpointTable cleared (%s).", szMapName);
+	LogMessage("MapCheckpointTable cleared (%s).", szMapName);
 }
 //-----------------------------//
 // reset player checkpoints method //
 //-----------------------------//
-public db_resetPlayerCheckpoints(client, String:szPlayerName[MAX_NAME_LENGTH]){
+public db_resetPlayerCheckpoints(client, String:szPlayerName[MAX_NAME_LENGTH], String:szMapName[MAX_MAP_LENGTH]){
 	decl String:szQuery[255];
 	
 	//escape some quote characters that could mess up the szQuery
 	decl String:szName[MAX_NAME_LENGTH*2+1];
 	SQL_QuoteString(g_hDb, szPlayerName, szName, MAX_NAME_LENGTH*2+1);
 	
-	Format(szQuery, 255, sql_resetPlayerCheckpoints, szName, g_szMapName);
+	Format(szQuery, 255, sql_resetPlayerCheckpoints, szName, szMapName);
 	
 	SQL_LockDatabase(g_hDb);
 	SQL_FastQuery(g_hDb, szQuery);
 	SQL_UnlockDatabase(g_hDb);
 	
-	PrintToConsole(client, "PlayerCheckpointsTable cleared.");
-	LogMessage("PlayerCheckpointsTable cleared.");
+	PrintToConsole(client, "PlayerCheckpointsTable cleared (%s on %s).",szPlayerName, szMapName);
+	LogMessage("PlayerCheckpointsTable cleared (%s on %s).", szPlayerName, szMapName);
 }
 
 //----------------------//
@@ -974,7 +974,7 @@ public db_resetMapRecords(client, String:szMapName[MAX_MAP_LENGTH]){
 	SQL_UnlockDatabase(g_hDb);
 	
 	PrintToConsole(client, "MapRecordTable cleared.");
-	LogMessage("MapRecordTable cleared.");
+	LogMessage("MapRecordTable cleared (%s).", szMapName);
 	
 	//maybe there is a "new" record
 	if(g_bRecordType == RECORD_TIME)
@@ -985,21 +985,21 @@ public db_resetMapRecords(client, String:szMapName[MAX_MAP_LENGTH]){
 //-----------------------------//
 // reset player records method //
 //-----------------------------//
-public db_resetPlayerRecords(client, String:szPlayerName[MAX_NAME_LENGTH]){
+public db_resetPlayerRecords(client, String:szPlayerName[MAX_NAME_LENGTH], String:szMapName[MAX_MAP_LENGTH]){
 	decl String:szQuery[255];
 	
 	//escape some quote characters that could mess up the szQuery
 	decl String:szName[MAX_NAME_LENGTH*2+1];
 	SQL_QuoteString(g_hDb, szPlayerName, szName, MAX_NAME_LENGTH*2+1);
 	
-	Format(szQuery, 255, sql_resetPlayerRecords, szPlayerName, g_szMapName);
+	Format(szQuery, 255, sql_resetPlayerRecords, szPlayerName, szMapName);
 	
 	SQL_LockDatabase(g_hDb);
 	SQL_FastQuery(g_hDb, szQuery);
 	SQL_UnlockDatabase(g_hDb);
 	
 	PrintToConsole(client, "PlayerRecordTable cleared.");
-	LogMessage("PlayerRecordTable cleared.");
+	LogMessage("PlayerRecordTable cleared (%s on %s).", szPlayerName, szMapName);
 	
 	//maybe there is a "new" record
 	if(g_bRecordType == RECORD_TIME)

@@ -156,63 +156,9 @@ public Action:CpSetTimer(Handle:timer, any:client){
 		//get position
 		GetClientAbsOrigin(client,g_fCpSetECords);
 		
-		//initialize tempoary variables bottom front
-		decl Float:fLeftBottomFront[3];
-		fLeftBottomFront[0] = g_fCpSetBCords[0];
-		fLeftBottomFront[1] = g_fCpSetBCords[1];
-		fLeftBottomFront[2] = g_fCpSetECords[2];
-		decl Float:fRightBottomFront[3];
-		fRightBottomFront[0] = g_fCpSetECords[0];
-		fRightBottomFront[1] = g_fCpSetBCords[1];
-		fRightBottomFront[2] = g_fCpSetECords[2];
+		//draw blue box
+		DrawBox(g_fCpSetBCords, g_fCpSetECords, 0.1, {0,0,255,255});
 		
-		//initialize tempoary variables bottom back
-		decl Float:fLeftBottomBack[3];
-		fLeftBottomBack[0] = g_fCpSetBCords[0];
-		fLeftBottomBack[1] = g_fCpSetECords[1];
-		fLeftBottomBack[2] = g_fCpSetECords[2];
-		decl Float:fRightBottomBack[3];
-		fRightBottomBack[0] = g_fCpSetECords[0];
-		fRightBottomBack[1] = g_fCpSetECords[1];
-		fRightBottomBack[2] = g_fCpSetECords[2];
-		
-		//initialize tempoary variables top front
-		decl Float:lefttopfront[3];
-		lefttopfront[0] = g_fCpSetBCords[0];
-		lefttopfront[1] = g_fCpSetBCords[1];
-		lefttopfront[2] = g_fCpSetBCords[2]+100;
-		decl Float:righttopfront[3];
-		righttopfront[0] = g_fCpSetECords[0];
-		righttopfront[1] = g_fCpSetBCords[1];
-		righttopfront[2] = g_fCpSetBCords[2]+100;
-		
-		//initialize tempoary variables top back
-		decl Float:fLeftTopBack[3];
-		fLeftTopBack[0] = g_fCpSetBCords[0];
-		fLeftTopBack[1] = g_fCpSetECords[1];
-		fLeftTopBack[2] = g_fCpSetBCords[2]+100;
-		decl Float:fRightTopBack[3];
-		fRightTopBack[0] = g_fCpSetECords[0];
-		fRightTopBack[1] = g_fCpSetECords[1];
-		fRightTopBack[2] = g_fCpSetBCords[2]+100;
-		
-		//create the box
-		TE_SetupBeamPoints(fLeftBottomFront,fRightBottomFront,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToClient(client, 0.0);
-		TE_SetupBeamPoints(fLeftBottomFront,fLeftBottomBack,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToClient(client, 0.0);
-		TE_SetupBeamPoints(fLeftBottomFront,lefttopfront,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToClient(client, 0.0);
-		
-		TE_SetupBeamPoints(lefttopfront,righttopfront,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToClient(client, 0.0);
-		TE_SetupBeamPoints(lefttopfront,fLeftTopBack,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToClient(client, 0.0);
-		TE_SetupBeamPoints(fRightTopBack,fLeftTopBack,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToClient(client, 0.0);
-		TE_SetupBeamPoints(fRightTopBack,righttopfront,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToClient(client, 0.0);
-		
-		TE_SetupBeamPoints(fRightBottomBack,fLeftBottomBack,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToClient(client, 0.0);
-		TE_SetupBeamPoints(fRightBottomBack,fRightBottomFront,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToClient(client, 0.0);
-		TE_SetupBeamPoints(fRightBottomBack,fRightTopBack,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToClient(client, 0.0);
-		
-		TE_SetupBeamPoints(fRightBottomFront,righttopfront,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToClient(client, 0.0);
-		TE_SetupBeamPoints(fLeftBottomBack,fLeftTopBack,g_BeamSpriteFollow,0,0,0,0.1,3.0,3.0,10,0.0,{0,0,255,255},0);TE_SendToClient(client, 0.0);
-
 	}else{ //no valid player
 		//close the box update timer if not closed before
 		if(g_hcpSetterTimer != INVALID_HANDLE){
@@ -223,10 +169,71 @@ public Action:CpSetTimer(Handle:timer, any:client){
 	}
 }
 
+//-----------------------//
+// DrawBox helper method //
+//-----------------------//
+public DrawBox(Float:fFrom[3], Float:fTo[3], Float:fLife, color[4]){
+	//initialize tempoary variables bottom front
+	decl Float:fLeftBottomFront[3];
+	fLeftBottomFront[0] = fFrom[0];
+	fLeftBottomFront[1] = fFrom[1];
+	fLeftBottomFront[2] = fTo[2];
+	decl Float:fRightBottomFront[3];
+	fRightBottomFront[0] = fTo[0];
+	fRightBottomFront[1] = fFrom[1];
+	fRightBottomFront[2] = fTo[2];
+	
+	//initialize tempoary variables bottom back
+	decl Float:fLeftBottomBack[3];
+	fLeftBottomBack[0] = fFrom[0];
+	fLeftBottomBack[1] = fTo[1];
+	fLeftBottomBack[2] = fTo[2];
+	decl Float:fRightBottomBack[3];
+	fRightBottomBack[0] = fTo[0];
+	fRightBottomBack[1] = fTo[1];
+	fRightBottomBack[2] = fTo[2];
+	
+	//initialize tempoary variables top front
+	decl Float:lefttopfront[3];
+	lefttopfront[0] = fFrom[0];
+	lefttopfront[1] = fFrom[1];
+	lefttopfront[2] = fFrom[2]+100;
+	decl Float:righttopfront[3];
+	righttopfront[0] = fTo[0];
+	righttopfront[1] = fFrom[1];
+	righttopfront[2] = fFrom[2]+100;
+	
+	//initialize tempoary variables top back
+	decl Float:fLeftTopBack[3];
+	fLeftTopBack[0] = fFrom[0];
+	fLeftTopBack[1] = fTo[1];
+	fLeftTopBack[2] = fFrom[2]+100;
+	decl Float:fRightTopBack[3];
+	fRightTopBack[0] = fTo[0];
+	fRightTopBack[1] = fTo[1];
+	fRightTopBack[2] = fFrom[2]+100;
+	
+	//create the box
+	TE_SetupBeamPoints(fLeftBottomFront,fRightBottomFront,g_BeamSpriteFollow,0,0,0,fLife,3.0,3.0,10,0.0,color,0);//TE_SendToClient(client, 0.0);
+	TE_SetupBeamPoints(fLeftBottomFront,fLeftBottomBack,g_BeamSpriteFollow,0,0,0,fLife,3.0,3.0,10,0.0,color,0);//TE_SendToClient(client, 0.0);
+	TE_SetupBeamPoints(fLeftBottomFront,lefttopfront,g_BeamSpriteFollow,0,0,0,fLife,3.0,3.0,10,0.0,color,0);//TE_SendToClient(client, 0.0);
+	
+	TE_SetupBeamPoints(lefttopfront,righttopfront,g_BeamSpriteFollow,0,0,0,fLife,3.0,3.0,10,0.0,color,0);//TE_SendToClient(client, 0.0);
+	TE_SetupBeamPoints(lefttopfront,fLeftTopBack,g_BeamSpriteFollow,0,0,0,fLife,3.0,3.0,10,0.0,color,0);//TE_SendToClient(client, 0.0);
+	TE_SetupBeamPoints(fRightTopBack,fLeftTopBack,g_BeamSpriteFollow,0,0,0,fLife,3.0,3.0,10,0.0,color,0);//TE_SendToClient(client, 0.0);
+	TE_SetupBeamPoints(fRightTopBack,righttopfront,g_BeamSpriteFollow,0,0,0,fLife,3.0,3.0,10,0.0,color,0);//TE_SendToClient(client, 0.0);
+	
+	TE_SetupBeamPoints(fRightBottomBack,fLeftBottomBack,g_BeamSpriteFollow,0,0,0,fLife,3.0,3.0,10,0.0,color,0);//TE_SendToClient(client, 0.0);
+	TE_SetupBeamPoints(fRightBottomBack,fRightBottomFront,g_BeamSpriteFollow,0,0,0,fLife,3.0,3.0,10,0.0,color,0);//TE_SendToClient(client, 0.0);
+	TE_SetupBeamPoints(fRightBottomBack,fRightTopBack,g_BeamSpriteFollow,0,0,0,fLife,3.0,3.0,10,0.0,color,0);//TE_SendToClient(client, 0.0);
+	
+	TE_SetupBeamPoints(fRightBottomFront,righttopfront,g_BeamSpriteFollow,0,0,0,fLife,3.0,3.0,10,0.0,color,0);//TE_SendToClient(client, 0.0);
+	TE_SetupBeamPoints(fLeftBottomBack,fLeftTopBack,g_BeamSpriteFollow,0,0,0,fLife,3.0,3.0,10,0.0,color,0);//TE_SendToClient(client, 0.0);
+}
 
-//------------------------//
-// stet timer cords methd //
-//------------------------//
+//-------------------------//
+// stet timer cords method //
+//-------------------------//
 public SetTimerCords(client, pos){
 	decl String:szBCords[38];
 	decl String:szECords[38];
@@ -253,7 +260,6 @@ public SetTimerCords(client, pos){
 			//set stop coordinates set to true
 			g_bStopCordsSet = true;
 		}
-		
 	}
 	
 	//format the coordinates in string buffers
@@ -278,7 +284,7 @@ public SetTimerCords(client, pos){
 //--------------------------//
 public Action:Admin_PurgePlayer(client, args){
 	//if not correct arguments
-	if (args != 1){
+	if(args != 1){
 		ReplyToCommand(client, "[SM] Usage: sm_purgeplayer <days>");
 		return Plugin_Handled;
 	}
@@ -311,11 +317,11 @@ public Action:Admin_DropPlayer(client, args){
 //------------------------//
 public Action:Admin_ResetMapTimer(client, args){
 	//if not correct arguments
-	if (args != 1){
+	if(args != 1){
 		ReplyToCommand(client, "[SM] Usage: sm_resetmaptimer <mapname>");
 		return Plugin_Handled;
 	}
-
+	
 	//create the database query
 	decl String:szMapName[MAX_MAP_LENGTH];
 	GetCmdArg(1, szMapName, MAX_MAP_LENGTH);
@@ -335,11 +341,11 @@ public Action:Admin_ResetCheckpoints(client, args){
 //----------------------------------//
 public Action:Admin_ResetMapCheckpoints(client, args){
 	//if not correct arguments
-	if (args != 1){
+	if(args != 1){
 		ReplyToCommand(client, "[SM] Usage: sm_resetmapcheckpoints <mapname>");
 		return Plugin_Handled;
 	}
-
+	
 	//create the database query
 	decl String:szMapName[MAX_MAP_LENGTH];
 	GetCmdArg(1, szMapName, MAX_MAP_LENGTH);
@@ -354,16 +360,23 @@ public Action:Admin_ResetMapCheckpoints(client, args){
 // admin reset player checkpoints hook //
 //-------------------------------------//
 public Action:Admin_ResetPlayerCheckpoints(client, args){
-	//if not correct arguments
-	if (args != 1){
-		ReplyToCommand(client, "[SM] Usage: sm_resetplayercheckpoints <playername>");
+	//if not enough arguments
+	if(args < 1){
+		ReplyToCommand(client, "[SM] Usage: sm_resetplayercheckpoints <playername> [<mapname>]");
 		return Plugin_Handled;
+	}else if(args == 1){
+		decl String:szPlayerName[MAX_NAME_LENGTH];
+		GetCmdArg(1, szPlayerName, MAX_NAME_LENGTH);
+		
+		db_resetPlayerCheckpoints(client, szPlayerName, g_szMapName);
+	}else if(args == 2){
+		decl String:szPlayerName[MAX_NAME_LENGTH];
+		decl String:szMapName[MAX_MAP_LENGTH];
+		GetCmdArg(1, szPlayerName, MAX_NAME_LENGTH);
+		GetCmdArg(2, szMapName, MAX_NAME_LENGTH);
+		
+		db_resetPlayerCheckpoints(client, szPlayerName, szMapName);
 	}
-
-	//create the database query
-	decl String:szPlayerName[MAX_NAME_LENGTH];
-	GetCmdArg(1, szPlayerName, MAX_NAME_LENGTH);
-	db_resetPlayerCheckpoints(client, szPlayerName);
 	return Plugin_Handled;
 }
 
@@ -379,11 +392,11 @@ public Action:Admin_ResetRecords(client, args){
 //------------------------------//
 public Action:Admin_ResetMapRecords(client, args){
 	//if not correct arguments
-	if (args != 1){
+	if(args != 1){
 		ReplyToCommand(client, "[SM] Usage: sm_resetmaprecords <mapname>");
 		return Plugin_Handled;
 	}
-
+	
 	//create the database query
 	decl String:szMapName[MAX_MAP_LENGTH];
 	GetCmdArg(1, szMapName, MAX_MAP_LENGTH);
@@ -394,15 +407,22 @@ public Action:Admin_ResetMapRecords(client, args){
 // admin reset player records hook //
 //---------------------------------//
 public Action:Admin_ResetPlayerRecords(client, args){
-	//if not correct arguments
-	if (args != 1){
-		ReplyToCommand(client, "[SM] Usage: sm_resetplayerrecords <playername>");
+	//if not enough arguments
+	if(args < 1){
+		ReplyToCommand(client, "[SM] Usage: sm_resetplayerrecords <playername> [<mapname>]");
 		return Plugin_Handled;
+	}else if(args == 1){
+		decl String:szPlayerName[MAX_NAME_LENGTH];
+		GetCmdArg(1, szPlayerName, MAX_NAME_LENGTH);
+		
+		db_resetPlayerRecords(client, szPlayerName, g_szMapName);
+	}else if(args == 2){
+		decl String:szPlayerName[MAX_NAME_LENGTH];
+		decl String:szMapName[MAX_MAP_LENGTH];
+		GetCmdArg(1, szPlayerName, MAX_NAME_LENGTH);
+		GetCmdArg(2, szMapName, MAX_NAME_LENGTH);
+		
+		db_resetPlayerRecords(client, szPlayerName, szMapName);
 	}
-
-	//create the database query
-	decl String:szPlayerName[MAX_NAME_LENGTH];
-	GetCmdArg(1, szPlayerName, MAX_NAME_LENGTH);
-	db_resetPlayerRecords(client, szPlayerName);
 	return Plugin_Handled;
 }

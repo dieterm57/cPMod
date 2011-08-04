@@ -53,9 +53,9 @@ Cmds:
 
 !help       - Displays the help menu
 !block      - Toogles blocking
-!hide				- Toobles player visibility
+!hide       - Toobles player visibility
 !scout      - Spawns a scout
-!usp				- Spawns a usp
+!usp        - Spawns a usp
 !lowgrav    - Sets player gravity to low
 !normalgrav - Sets player gravity to default
 
@@ -92,12 +92,12 @@ sm_dropmaps                            - Drops all stored map start/end points.
 sm_dropplayers                         - Drops all players.
 sm_resetmaptimer <mapname>             - Resets timer for given map.
 
-sm_resetcheckpoints                    - Resets all checkpoints.
-sm_resetmapcheckpoints <mapname>       - Resets all checkpoints for given map.
-sm_resetplayercheckpoints <playername> - Resets all checkpoints for given player.
-sm_resetrecords                        - Drops all records.
-sm_resetmaprecords <mapname>           - Resets all records for given map.
-sm_resetplayerrecords <playername>     - Resets all records for given player.
+sm_resetcheckpoints                                - Resets all checkpoints.
+sm_resetmapcheckpoints <mapname>                   - Resets all checkpoints for given map.
+sm_resetplayercheckpoints <playername> [<mapname>] - Resets all checkpoints for given player.
+sm_resetrecords                                    - Drops all records.
+sm_resetmaprecords <mapname>                       - Resets all records for given map.
+sm_resetplayerrecords <playername> [<mapname>]     - Resets all records for given player.
 
 Versions
 1.0
@@ -191,14 +191,19 @@ Versions
     - Enhanced record command to record <mapname>
     - Various details changed
 2.0.6
-		- Added !usp command
-		- Added !hide command
+    - Added !usp command
+    - Added !hide command
     - Added sm_cp_rotation cvar
-		- Changed sm_cp_alpha to set a value from 0 to 255
-		- Changed sm_cp_scoutlimit to sm_cp_gunlimit
+    - Changed sm_cp_alpha to set a value from 0 to 255
+    - Changed sm_cp_scoutlimit to sm_cp_gunlimit
+    - Changed sm_resetplayercheckpoints to take a mapname
+    - Changed sm_resetplayerrecords to take a mapname
+    - Disabled gravity changing during active timer
+    - Enhanced logging for reset commands
     - Fixed multiple client 0 invalid errors
     - Fixed sm_resetplayerrecords and sm_resetplayercheckpoints for current map only
     - Fixed sm_cp_speedunit km/h rounding issue
+    - Fixed timer not saving records if g_bEnabled false
 */
 
 #include <sourcemod>
@@ -257,6 +262,7 @@ new Handle:g_hcvarRecordType = INVALID_HANDLE;
 new g_bRecordType = RECORD_TIME;
 new Handle:g_hcvarRotation = INVALID_HANDLE;
 new bool:g_bRotation = false;
+new Handle:g_hDrawZoneTimer = INVALID_HANDLE;
 
 new bool:g_bStartCordsSet = false;
 new bool:g_bStopCordsSet = false;
@@ -323,7 +329,7 @@ new String:g_szMapName[MAX_MAP_LENGTH];
 new g_RecordJumps;
 new g_RecordTime;
 
-new g_BeamSpriteFollow, g_BeamSpriteRing1,g_BeamSpriteRing2;
+new g_BeamSpriteFollow, g_BeamSpriteRing1, g_BeamSpriteRing2;
 new bool:g_bCpPanelOpen = false;
 
 
@@ -461,11 +467,11 @@ public OnPluginStart(){
 	
 	RegAdminCmd("sm_resetcheckpoints", Admin_ResetCheckpoints, ADMIN_LEVEL, "Resets all checkpoints.");
 	RegAdminCmd("sm_resetmapcheckpoints", Admin_ResetMapCheckpoints, ADMIN_LEVEL, "Resets all checkpoints for given map.");
-	RegAdminCmd("sm_resetplayercheckpoints", Admin_ResetPlayerCheckpoints, ADMIN_LEVEL, "Resets all checkpoints for given player.");
+	RegAdminCmd("sm_resetplayercheckpoints", Admin_ResetPlayerCheckpoints, ADMIN_LEVEL, "Resets all checkpoints for given player with / without given map.");
 	
 	RegAdminCmd("sm_resetrecords", Admin_ResetRecords, ADMIN_LEVEL, "Drops all records.");
 	RegAdminCmd("sm_resetmaprecords", Admin_ResetMapRecords, ADMIN_LEVEL, "Resets all records for given map.");
-	RegAdminCmd("sm_resetplayerrecords", Admin_ResetPlayerRecords, ADMIN_LEVEL, "Resets all records for given player.");
+	RegAdminCmd("sm_resetplayerrecords", Admin_ResetPlayerRecords, ADMIN_LEVEL, "Resets all records for given player with / without given map.");
 	
 	AutoExecConfig(true, "sm_cpmod");
 }
@@ -501,6 +507,9 @@ public OnMapStart(){
 			db_selectWorldRecordTime();
 		else
 			db_selectWorldRecordJump();
+		
+		//setup draw zone timer
+		g_hDrawZoneTimer = CreateTimer(1.0, ActionDrawZoneTimer, _, TIMER_REPEAT);
 	}
 	
 	//if cleanup guns timer active
@@ -550,6 +559,10 @@ public OnMapEnd(){
 				CloseHandle(g_hMapTimer[i]);
 				g_hMapTimer[i] = INVALID_HANDLE;
 			}
+			
+			//cleanup visibility
+			if(g_bPlayerHide)
+				SDKUnhook(i, SDKHook_SetTransmit, SetTransmit);
 		}
 	}
 	
@@ -558,6 +571,10 @@ public OnMapEnd(){
 		CloseHandle(g_hCleanTimer);
 		g_hCleanTimer = INVALID_HANDLE;
 	}
+	
+	//close draw zone timer
+	CloseHandle(g_hDrawZoneTimer);
+	g_hDrawZoneTimer = INVALID_HANDLE;
 }
 
 //-----------------------------------//
@@ -690,26 +707,28 @@ public OnSettingChanged(Handle:convar, const String:oldValue[], const String:new
 //------------------------------------//
 public OnClientPostAdminCheck(client){
 	//if g_Enabled and client valid
-	if(g_bEnabled && IsClientInGame(client) && !IsFakeClient(client)){
-		//reset some settings
+	if(IsClientInGame(client) && !IsFakeClient(client)){
+		if(g_bEnabled){
+			//reset some settings
+			g_CurrentCp[client] = -1;
+			g_WholeCp[client] = 0;
+		
+			//if checkpoint restoring select the last one
+			if(g_bRestore)
+				db_selectPlayerCheckpoint(client);
+			//display the help panel
+			HelpPanel(client);
+		}
+		
 		g_hTraceTimer[client] = INVALID_HANDLE;
 		g_hMapTimer[client] = INVALID_HANDLE;
-		g_CurrentCp[client] = -1;
-		g_WholeCp[client] = 0;
+		
+		//if visibility enabled
+		if(g_bPlayerHide)
+			SDKHook(client, SDKHook_SetTransmit, SetTransmit);
 		
 		//select playerdata; creates a player if none found
 		db_selectPlayer(client);
-		
-		//if checkpoint restoring select the last one
-		if(g_bRestore)
-			db_selectPlayerCheckpoint(client);
-		
-		//if visibility
-		if(g_bPlayerHide)
-			SDKHook(client, SDKHook_SetTransmit, SetTransmit);
-
-		//display the help panel
-		HelpPanel(client);
 	}
 }
 
@@ -737,4 +756,8 @@ public OnClientDisconnect(client){
 		CloseHandle(g_hTraceTimer[client]);
 		g_hTraceTimer[client] = INVALID_HANDLE;
 	}
+	
+	//cleanup visibility
+	if(g_bPlayerHide)
+		SDKUnhook(client, SDKHook_SetTransmit, SetTransmit);
 }
