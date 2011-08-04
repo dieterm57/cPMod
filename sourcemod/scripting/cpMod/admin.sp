@@ -329,37 +329,10 @@ public Action:Admin_ResetMapTimer(client, args){
 	return Plugin_Handled;
 }
 
-//------------------------------//
-// admin reset checkpoints hook //
-//------------------------------//
-public Action:Admin_ResetCheckpoints(client, args){
-	db_resetCheckpoints(client);
-	return Plugin_Handled;
-}
-//----------------------------------//
-// admin reset map checkpoints hook //
-//----------------------------------//
-public Action:Admin_ResetMapCheckpoints(client, args){
-	//if not correct arguments
-	if(args != 1){
-		ReplyToCommand(client, "[SM] Usage: sm_resetmapcheckpoints <mapname>");
-		return Plugin_Handled;
-	}
-	
-	//create the database query
-	decl String:szMapName[MAX_MAP_LENGTH];
-	GetCmdArg(1, szMapName, MAX_MAP_LENGTH);
-	db_resetMapCheckpoints(client, szMapName);
-	
-	g_bStartCordsSet = false;
-	g_bStopCordsSet = false;
-	
-	return Plugin_Handled;
-}
 //-------------------------------------//
 // admin reset player checkpoints hook //
 //-------------------------------------//
-public Action:Admin_ResetPlayerCheckpoints(client, args){
+public Action:Admin_ResetCheckpoints(client, args){
 	//if not enough arguments
 	if(args < 1){
 		ReplyToCommand(client, "[SM] Usage: sm_resetplayercheckpoints <playername> [<mapname>]");
@@ -380,33 +353,10 @@ public Action:Admin_ResetPlayerCheckpoints(client, args){
 	return Plugin_Handled;
 }
 
-//--------------------------//
-// admin reset records hook //
-//--------------------------//
-public Action:Admin_ResetRecords(client, args){
-	db_resetRecords(client);
-	return Plugin_Handled;
-}
-//------------------------------//
-// admin reset map records hook //
-//------------------------------//
-public Action:Admin_ResetMapRecords(client, args){
-	//if not correct arguments
-	if(args != 1){
-		ReplyToCommand(client, "[SM] Usage: sm_resetmaprecords <mapname>");
-		return Plugin_Handled;
-	}
-	
-	//create the database query
-	decl String:szMapName[MAX_MAP_LENGTH];
-	GetCmdArg(1, szMapName, MAX_MAP_LENGTH);
-	db_resetMapRecords(client, szMapName);
-	return Plugin_Handled;
-}
 //---------------------------------//
 // admin reset player records hook //
 //---------------------------------//
-public Action:Admin_ResetPlayerRecords(client, args){
+public Action:Admin_ResetRecords(client, args){
 	//if not enough arguments
 	if(args < 1){
 		ReplyToCommand(client, "[SM] Usage: sm_resetplayerrecords <playername> [<mapname>]");
