@@ -68,13 +68,8 @@ new String:sqlite_dropPlayer[] = "DROP TABLE player; VACCUM";
 new String:sql_dropPlayer[] = "DROP TABLE player;";
 new String:sql_resetMapTimer[] = "UPDATE map SET start0 = '0:0:0', start1 = '0:0:0', end0 = '0:0:0', end1 = '0:0:0' WHERE mapname = '%s';"; 
 
-new String:sql_resetCheckpoints[] = "UPDATE player SET cords = '0:0:0', angle = '0:0:0';";
-new String:sql_resetMapCheckpoints[] = "UPDATE player SET cords = '0:0:0', angle = '0:0:0' WHERE mapname = '%s';";
-new String:sql_resetPlayerCheckpoints[] = "UPDATE player SET cords = '0:0:0', angle = '0:0:0' WHERE name LIKE '%s' AND mapname = '%s';";
-
-new String:sql_resetRecords[] = "UPDATE player SET jumps = '-1', runtime = '-1';";
-new String:sql_resetMapRecords[] = "UPDATE player SET jumps = '-1', runtime = '-1' WHERE mapname = '%s';";
-new String:sql_resetPlayerRecords[] = "UPDATE player SET jumps = '-1', runtime = '-1' WHERE name LIKE '%s' AND mapname = '%s';";
+new String:sql_resetCheckpoints[] = "UPDATE player SET cords = '0:0:0', angle = '0:0:0' WHERE name LIKE '%s' AND mapname = '%s';";
+new String:sql_resetRecords[] = "UPDATE player SET jumps = '-1', runtime = '-1' WHERE name LIKE '%s' AND mapname = '%s';";
 
 
 //-------------------------//
@@ -897,36 +892,9 @@ public db_resetMapTimer(client, String:szMapName[MAX_MAP_LENGTH]){
 	LogMessage("Maptimer resettet.");
 }
 
-
-//--------------------------//
-// reset checkpoints method //
-//--------------------------//
-public db_resetCheckpoints(client){
-	SQL_LockDatabase(g_hDb);
-	SQL_FastQuery(g_hDb, sql_resetCheckpoints);
-	SQL_UnlockDatabase(g_hDb);
-	
-	PrintToConsole(client, "CheckpointTable cleared.");
-	LogMessage("CheckpointTable cleared.");
-}
-//------------------------------//
-// reset map checkpoints method //
-//------------------------------//
-public db_resetMapCheckpoints(client, String:szMapName[MAX_MAP_LENGTH]){
-	decl String:szQuery[255];
-	
-	Format(szQuery, 255, sql_resetMapCheckpoints, szMapName);
-	
-	SQL_LockDatabase(g_hDb);
-	SQL_FastQuery(g_hDb, szQuery);
-	SQL_UnlockDatabase(g_hDb);
-	
-	PrintToConsole(client, "MapCheckpointTable cleared (%s).", szMapName);
-	LogMessage("MapCheckpointTable cleared (%s).", szMapName);
-}
-//-----------------------------//
+//---------------------------------//
 // reset player checkpoints method //
-//-----------------------------//
+//---------------------------------//
 public db_resetPlayerCheckpoints(client, String:szPlayerName[MAX_NAME_LENGTH], String:szMapName[MAX_MAP_LENGTH]){
 	decl String:szQuery[255];
 	
@@ -934,7 +902,7 @@ public db_resetPlayerCheckpoints(client, String:szPlayerName[MAX_NAME_LENGTH], S
 	decl String:szName[MAX_NAME_LENGTH*2+1];
 	SQL_QuoteString(g_hDb, szPlayerName, szName, MAX_NAME_LENGTH*2+1);
 	
-	Format(szQuery, 255, sql_resetPlayerCheckpoints, szName, szMapName);
+	Format(szQuery, 255, sql_resetCheckpoints, szName, szMapName);
 	
 	SQL_LockDatabase(g_hDb);
 	SQL_FastQuery(g_hDb, szQuery);
@@ -944,44 +912,6 @@ public db_resetPlayerCheckpoints(client, String:szPlayerName[MAX_NAME_LENGTH], S
 	LogMessage("PlayerCheckpointsTable cleared (%s on %s).", szPlayerName, szMapName);
 }
 
-//----------------------//
-// reset records method //
-//----------------------//
-public db_resetRecords(client){
-	SQL_LockDatabase(g_hDb);
-	SQL_FastQuery(g_hDb, sql_resetRecords);
-	SQL_UnlockDatabase(g_hDb);
-	
-	PrintToConsole(client, "RecordTable cleared.");
-	LogMessage("RecordTable cleared.");
-	
-	//maybe there is a "new" record
-	if(g_bRecordType == RECORD_TIME)
-		db_selectWorldRecordTime();
-	else
-		db_selectWorldRecordJump();
-}
-//--------------------------//
-// reset map records method //
-//--------------------------//
-public db_resetMapRecords(client, String:szMapName[MAX_MAP_LENGTH]){
-	decl String:szQuery[255];
-	
-	Format(szQuery, 255, sql_resetMapRecords, szMapName);
-
-	SQL_LockDatabase(g_hDb);
-	SQL_FastQuery(g_hDb, szQuery);
-	SQL_UnlockDatabase(g_hDb);
-	
-	PrintToConsole(client, "MapRecordTable cleared.");
-	LogMessage("MapRecordTable cleared (%s).", szMapName);
-	
-	//maybe there is a "new" record
-	if(g_bRecordType == RECORD_TIME)
-		db_selectWorldRecordTime();
-	else
-		db_selectWorldRecordJump();
-}
 //-----------------------------//
 // reset player records method //
 //-----------------------------//
@@ -992,7 +922,7 @@ public db_resetPlayerRecords(client, String:szPlayerName[MAX_NAME_LENGTH], Strin
 	decl String:szName[MAX_NAME_LENGTH*2+1];
 	SQL_QuoteString(g_hDb, szPlayerName, szName, MAX_NAME_LENGTH*2+1);
 	
-	Format(szQuery, 255, sql_resetPlayerRecords, szPlayerName, szMapName);
+	Format(szQuery, 255, sql_resetRecords, szPlayerName, szMapName);
 	
 	SQL_LockDatabase(g_hDb);
 	SQL_FastQuery(g_hDb, szQuery);

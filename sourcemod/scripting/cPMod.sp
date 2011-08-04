@@ -92,11 +92,7 @@ sm_dropmaps                            - Drops all stored map start/end points.
 sm_dropplayers                         - Drops all players.
 sm_resetmaptimer <mapname>             - Resets timer for given map.
 
-sm_resetcheckpoints                                - Resets all checkpoints.
-sm_resetmapcheckpoints <mapname>                   - Resets all checkpoints for given map.
 sm_resetplayercheckpoints <playername> [<mapname>] - Resets all checkpoints for given player.
-sm_resetrecords                                    - Drops all records.
-sm_resetmaprecords <mapname>                       - Resets all records for given map.
 sm_resetplayerrecords <playername> [<mapname>]     - Resets all records for given player.
 
 Versions
@@ -204,6 +200,8 @@ Versions
     - Fixed sm_resetplayerrecords and sm_resetplayercheckpoints for current map only
     - Fixed sm_cp_speedunit km/h rounding issue
     - Fixed timer not saving records if g_bEnabled false
+    - Removed sm_resetcheckpoints, sm_resetmapcheckpoints
+    - Removed sm_resetrecords, sm_resetmaprecords
 */
 
 #include <sourcemod>
@@ -465,13 +463,9 @@ public OnPluginStart(){
 	RegAdminCmd("sm_dropplayers", Admin_DropPlayer, ADMIN_LEVEL, "Drops all players.");
 	RegAdminCmd("sm_resetmaptimer", Admin_ResetMapTimer, ADMIN_LEVEL, "Resets timer for given map.");
 	
-	RegAdminCmd("sm_resetcheckpoints", Admin_ResetCheckpoints, ADMIN_LEVEL, "Resets all checkpoints.");
-	RegAdminCmd("sm_resetmapcheckpoints", Admin_ResetMapCheckpoints, ADMIN_LEVEL, "Resets all checkpoints for given map.");
-	RegAdminCmd("sm_resetplayercheckpoints", Admin_ResetPlayerCheckpoints, ADMIN_LEVEL, "Resets all checkpoints for given player with / without given map.");
+	RegAdminCmd("sm_resetcheckpoints", Admin_ResetCheckpoints, ADMIN_LEVEL, "Resets all checkpoints for given player with / without given map.");
 	
-	RegAdminCmd("sm_resetrecords", Admin_ResetRecords, ADMIN_LEVEL, "Drops all records.");
-	RegAdminCmd("sm_resetmaprecords", Admin_ResetMapRecords, ADMIN_LEVEL, "Resets all records for given map.");
-	RegAdminCmd("sm_resetplayerrecords", Admin_ResetPlayerRecords, ADMIN_LEVEL, "Resets all records for given player with / without given map.");
+	RegAdminCmd("sm_resetrecords", Admin_ResetRecords, ADMIN_LEVEL, "Resets all records for given player with / without given map.");
 	
 	AutoExecConfig(true, "sm_cpmod");
 }
