@@ -43,10 +43,10 @@
 	"TimerActiveProtection"
 	{
 		"#format"   "{1:c},{2:c},{3:c},{4:c},{5:c}"
-		"en"        "{1}[{2}cP{3} Mod] Timer active. Teleportation not allowed! Type{4} !stop{5} to quit."
-		"fr"        "{1}[{2}cP{3} Mod] Timer actif. Téléportation pas autorisé! Type{4} !stop{5} pour cesser de fumer."
-		"de"        "{1}[{2}cP{3} Mod] Timer aktiv. Teleportation nicht erlaubt! Gib{4} !stop{5} zum Beenden ein."
-		"ru"        "{1}[{2}cP{3} Mod] Таймер запущен.Телепортация не допускается.Напишите{4} !stop{5} для остановки таймера."
+		"en"        "{1}[{2}cP{3} Mod] Timer active. Action not allowed! Type{4} !stop{5} to quit."
+		"fr"        "{1}[{2}cP{3} Mod] Timer actif. L'action pas autorisé! Type{4} !stop{5} pour cesser de fumer."
+		"de"        "{1}[{2}cP{3} Mod] Timer aktiv. Aktion nicht erlaubt! Gib{4} !stop{5} zum Beenden ein."
+		"ru"        "{1}[{2}cP{3} Mod] Таймер запущен.действие не допускается.Напишите{4} !stop{5} для остановки таймера."
 	}
 	"TimerStarted"
 	{

@@ -180,6 +180,9 @@ public Action:Action_MapTimer(Handle:timer, any:client){
 		if(g_bRacing[client] == false){
 			//if player is in start zone
 			if(IsInsideBox(fPCords, POS_START)){
+				//disable lowgrav first if enabled
+				SetEntityGravity(client, 1.0);
+				
 				//set variables for racing
 				g_bRacing[client] = true;
 				g_RunTime[client] = 1;
