@@ -31,7 +31,7 @@
 
 /*
 [cP mod]
-- version 2.0.6b
+- version 2.0.6
 
 This plugin allows users to save their location and teleport later.
 It further provides some features for non skilled bHopper like low gravity or a scout.
@@ -85,13 +85,12 @@ sm_cp_recordsound  - <"quake/holyshit.mp3"> Sets the sound that is played on new
 sm_cp_speedunit    - <1|0> Changes the unit of speed displayed in timerpanel [0=default] [1=kmh].
 
 Admin:
-sm_cpadmin                             - Displays the admin panel.
-sm_purgeplayer <days>                  - Purges all old players.
+sm_cpadmin                                         - Displays the admin panel.
+sm_purgeplayer <days>                              - Purges all old players.
 
-sm_dropmaps                            - Drops all stored map start/end points.
-sm_dropplayers                         - Drops all players.
-sm_resetmaptimer <mapname>             - Resets timer for given map.
-
+sm_dropmaps                                        - Drops all stored map start/end points.
+sm_dropplayers                                     - Drops all players.
+sm_resetmaptimer <mapname>                         - Resets timer for given map.
 sm_resetplayercheckpoints <playername> [<mapname>] - Resets all checkpoints for given player.
 sm_resetplayerrecords <playername> [<mapname>]     - Resets all records for given player.
 
@@ -222,7 +221,7 @@ Versions
 // nothing to change over here //
 //-----------------------------//
 //...
-#define VERSION "2.0.6b3"
+#define VERSION "2.0.6"
 
 #define YELLOW 0x01
 #define TEAMCOLOR 0x02

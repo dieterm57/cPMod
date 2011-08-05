@@ -292,7 +292,9 @@ public ClientGravity(client,Float:amount){
 		if(!g_bRacing[client]){
 			//set amount to the new value
 			SetEntityGravity(client, amount);
-			if(amount>=1.0)
+			if(amount>1.0)
+				PrintToChat(client, "%t", "GravityHigh", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
+			else if(amount==1.0)
 				PrintToChat(client, "%t", "GravityNormal", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
 			else
 				PrintToChat(client, "%t", "GravityLow", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW);
