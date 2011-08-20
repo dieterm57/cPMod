@@ -140,8 +140,11 @@ public Action:ActionTraceTimer(Handle:timer, any:client){
 	if(client != 0 && IsClientInGame(client) && IsPlayerAlive(client)){
 		TE_SetupBeamFollow(client,g_BeamSpriteFollow,0,1.0,5.0,50.0,70,{255,255,255,100});TE_SendToAll();
 		return Plugin_Continue;
-	}else //not valid
+	}else{ //not valid
+		g_hTraceTimer[client] = INVALID_HANDLE;
+		
 		return Plugin_Stop;
+	}
 }
 
 //--------------------//

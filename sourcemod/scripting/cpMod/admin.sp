@@ -108,9 +108,11 @@ public CpAdminPanelStartHandler(Handle:menu, MenuAction:action, param1, param2){
 		}
 	}else if(action == MenuAction_End){
 		//close the box update timer
-		CloseHandle(g_hcpSetterTimer);
-		g_hcpSetterTimer = INVALID_HANDLE
-			
+		if(g_hcpSetterTimer != INVALID_HANDLE){
+			CloseHandle(g_hcpSetterTimer);
+			g_hcpSetterTimer = INVALID_HANDLE
+		}
+		
 		CloseHandle(menu);
 		g_bCpPanelOpen = false;
 	}
@@ -139,8 +141,10 @@ public CpAdminPanelStopHandler(Handle:menu, MenuAction:action, param1, param2){
 		}
 	}else if(action == MenuAction_End){
 		//close the box update timer
-		CloseHandle(g_hcpSetterTimer);
-		g_hcpSetterTimer = INVALID_HANDLE
+		if(g_hcpSetterTimer != INVALID_HANDLE){
+			CloseHandle(g_hcpSetterTimer);
+			g_hcpSetterTimer = INVALID_HANDLE
+		}
 		
 		CloseHandle(menu);
 		g_bCpPanelOpen = false;

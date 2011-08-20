@@ -66,10 +66,10 @@ new String:sqlite_dropMap[] = "DROP TABLE map; VACCUM";
 new String:sql_dropMap[] = "DROP TABLE map;";
 new String:sqlite_dropPlayer[] = "DROP TABLE player; VACCUM";
 new String:sql_dropPlayer[] = "DROP TABLE player;";
-new String:sql_resetMapTimer[] = "UPDATE map SET start0 = '0:0:0', start1 = '0:0:0', end0 = '0:0:0', end1 = '0:0:0' WHERE mapname = '%s';"; 
+new String:sql_resetMapTimer[] = "UPDATE map SET start0 = '0:0:0', start1 = '0:0:0', end0 = '0:0:0', end1 = '0:0:0' WHERE mapname LIKE '%s';"; 
 
-new String:sql_resetCheckpoints[] = "UPDATE player SET cords = '0:0:0', angle = '0:0:0' WHERE name LIKE '%s' AND mapname = '%s';";
-new String:sql_resetRecords[] = "UPDATE player SET jumps = '-1', runtime = '-1' WHERE name LIKE '%s' AND mapname = '%s';";
+new String:sql_resetCheckpoints[] = "UPDATE player SET cords = '0:0:0', angle = '0:0:0' WHERE name LIKE '%s' AND mapname LIKE '%s';";
+new String:sql_resetRecords[] = "UPDATE player SET jumps = '-1', runtime = '-1' WHERE name LIKE '%s' AND mapname LIKE '%s';";
 
 
 //-------------------------//
@@ -928,7 +928,7 @@ public db_resetPlayerRecords(client, String:szPlayerName[MAX_NAME_LENGTH], Strin
 	SQL_FastQuery(g_hDb, szQuery);
 	SQL_UnlockDatabase(g_hDb);
 	
-	PrintToConsole(client, "PlayerRecordTable cleared.");
+	PrintToConsole(client, "PlayerRecordTable cleared (%s on %s).", szPlayerName, szMapName);
 	LogMessage("PlayerRecordTable cleared (%s on %s).", szPlayerName, szMapName);
 	
 	//maybe there is a "new" record
