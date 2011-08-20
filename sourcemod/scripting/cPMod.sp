@@ -201,6 +201,10 @@ Versions
     - Fixed timer not saving records if g_bEnabled false
     - Removed sm_resetcheckpoints, sm_resetmapcheckpoints
     - Removed sm_resetrecords, sm_resetmaprecords
+2.0.7
+    - Improved tracetimer closing on disconnect
+    - Improved cpsettimer closing on disconnect
+    - Fixed usp counter not resetting after map change
 */
 
 #include <sourcemod>
@@ -488,6 +492,7 @@ public OnMapStart(){
 		g_CurrentCp[i] = -1;
 		g_WholeCp[i] = 0;
 		g_Scouts[i] = 0;
+		g_Usps[i] = 0;
 	}
 	
 	//if map timer active
