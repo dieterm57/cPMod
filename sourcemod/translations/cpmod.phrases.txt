@@ -76,25 +76,17 @@
 	{
 		"#format"   "{1:c},{2:c},{3:c},{4:c},{5:s},{6:c},{7:c},{8:s},{9:c}"
 		"en"        "{1}[{2}cP{3} Mod] {4}{5}{6} scored a new record ({7}{8}{9})!"
-		"fr"        "{1}[{2}cP{3} Mod] {4}{5}{6} a marqué un nouveau record ({7}{8}{9})!"
-		"de"        "{1}[{2}cP{3} Mod] {4}{5}{6} hat einen neuen Rekord ({7}{8}{9})!"
-		"ru"        "{1}[{2}cP{3} Mod] {4}{5}{6} установил новый рекорд ({7}{8}{9})!"	
+		"fr"        "{1}[{2}cP{3} Mod] {4}{5}{6} a marqué un nouveau record ({7}{8}{9}) sur le rang!"
+		"de"        "{1}[{2}cP{3} Mod] {4}{5}{6} hat einen neuen Rekord ({7}{8}{9}) auf Rang!"
+		"ru"        "{1}[{2}cP{3} Mod] {4}{5}{6} установил новый рекорд ({7}{8}{9}) от ранга!"
 	}
 	"TimerFinished"
 	{
-		"#format"   "{1:c},{2:c},{3:c},{4:c},{5:c}"
-		"en"        "{1}[{2}cP{3} Mod] You finished the map! Type {4}!restart{5} to retry."
-		"fr"        "{1}[{2}cP{3} Mod] Vous avez terminé la carte! Tapez {4}!restart{5} à réessayer."
-		"de"        "{1}[{2}cP{3} Mod] Du hast die Map geschafft! Schreib {4}!restart{5} um es erneut zu versuchen."
-		"ru"        "{1}[{2}cP{3} Mod] Вы на финише карты! Напишите {4}!restart{5} что бы повторить попытку."
-	}
-	"PlayerRank"
-	{
-		"#format"   "{1:c},{2:c},{3:c},{4:c},{5:s},{6:c},{7:c},{8:i},{9:i},{10:c}"
-		"en"        "{1}[{2}cP{3} Mod] {4}{5}{6} is ranked {7}{8}/{9}{10}!"
-		"fr"        "{1}[{2}cP{3} Mod] {4}{5}{6} est classé {7}{8}/{9}{10}!"
-		"de"        "{1}[{2}cP{3} Mod] {4}{5}{6} ist Rang {7}{8}/{9}{10}!"
-		"ru"        "{1}[{2}cP{3} Mod] {4}{5}{6} занимает место {7}{8}/{9}{10}!"
+		"#format"   "{1:c},{2:c},{3:c},{4:c},{5:s},{6:c},{7:c},{8:c}"
+		"en"        "{1}[{2}cP{3} Mod] You finished the map ({4}{5}{6})! Type {7}!restart{8} to retry."
+		"fr"        "{1}[{2}cP{3} Mod] Vous avez terminé la carte ({4}{5}{6})! Tapez {7}!restart{8} à réessayer."
+		"de"        "{1}[{2}cP{3} Mod] Du hast die Map geschafft ({4}{5}{6})! Schreib {7}!restart{8} um es erneut zu versuchen."
+		"ru"        "{1}[{2}cP{3} Mod] Вы на финише карты ({4}{5}{6})! Напишите {7}!restart{8} что бы повторить попытку."
 	}
 	"BlockingEnabled"
 	{
