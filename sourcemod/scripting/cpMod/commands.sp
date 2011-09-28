@@ -137,8 +137,10 @@ public Action:Client_Wr(client, args){
 //---------------------//
 // record panel method //
 //---------------------//
-public RecordPanel(client, String:szPlayerName[MAX_MAP_LENGTH]){
-	db_viewRecord(client, szPlayerName);
+public RecordPanel(client, String:szMapName[MAX_MAP_LENGTH]){
+	decl String:szSteamId[32];
+	GetClientAuthString(client, szSteamId, 32);
+	db_viewRecord(client, szSteamId, szMapName);
 }
 
 //----------------------------//

@@ -147,15 +147,15 @@ public Action:ActionTraceTimer(Handle:timer, any:client){
 	}
 }
 
-//--------------------//
+//------------------------//
 // draw zone timer action //
-//--------------------//
+//------------------------//
 public Action:ActionDrawZoneTimer(Handle:timer, any:client){
 	//draw start yellow
-	DrawBox(g_fCpSetBCords, g_fCpSetECords, 1.0, {255,255,0,255});
+	DrawBox(g_fMapTimer_start0_cords, g_fMapTimer_start1_cords, 1.0, {255,255,0,255});
 	
 	//draw finish green
-	DrawBox(g_fCpSetBCords, g_fCpSetECords, 1.0, {0,255,0,255});
+	DrawBox(g_fMapTimer_end0_cords, g_fMapTimer_end1_cords, 1.0, {0,255,0,255});
 	return Plugin_Continue;
 }
 
@@ -254,7 +254,7 @@ public Action:Action_MapTimer(Handle:timer, any:client){
 							//update the temporary variables
 							g_RecordTime = g_RunTime[client];
 						}else //no new record
-							PrintToChat(client, "%t", "TimerFinished", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW,GREEN,YELLOW);
+							PrintToChat(client, "%t", "TimerFinished", YELLOW,LIGHTGREEN,YELLOW,LIGHTGREEN,szTime,YELLOW,GREEN,YELLOW);
 					}else{
 						//check for new jump record
 						if(g_RunJumps[client] < g_RecordJumps){
@@ -268,14 +268,19 @@ public Action:Action_MapTimer(Handle:timer, any:client){
 								PrintToChat(client, "%t", "TimerRecord", YELLOW,LIGHTGREEN,YELLOW,GREEN,szName,YELLOW,LIGHTGREEN,szJumps,YELLOW);
 								EmitSoundToClient(client, g_szRecordSound);
 							}
-							
+							//TODO: add rank output like in phrases
 							//update the temporary variables
 							g_RecordJumps = g_RunJumps[client];
 						}else //no new record
-						PrintToChat(client, "%t", "TimerFinished", YELLOW,LIGHTGREEN,YELLOW,GREEN,YELLOW,GREEN,YELLOW);
+							PrintToChat(client, "%t", "TimerFinished", YELLOW,LIGHTGREEN,YELLOW,LIGHTGREEN,szJumps,YELLOW,GREEN,YELLOW);
 					}
 					//update the player record in the database
 					db_updateRecord(client);
+					
+					//display record panel
+					decl String:szSteamId[32];
+					GetClientAuthString(client, szSteamId, 32);
+					db_viewRecord(client, szSteamId, g_szMapName);
 					
 					//disable racing
 					g_bRacing[client] = false;

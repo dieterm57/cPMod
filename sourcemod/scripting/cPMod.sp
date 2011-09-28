@@ -31,7 +31,7 @@
 
 /*
 [cP mod]
-- version 2.0.6
+- version 2.0.7
 
 This plugin allows users to save their location and teleport later.
 It further provides some features for non skilled bHopper like low gravity or a scout.
@@ -205,6 +205,7 @@ Versions
     - Improved tracetimer closing on disconnect
     - Improved cpsettimer closing on disconnect
     - Fixed usp counter not resetting after map change
+    - Rewrite of record displaying
 */
 
 #include <sourcemod>
