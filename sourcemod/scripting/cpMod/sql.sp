@@ -415,20 +415,20 @@ public SQL_UpdateRecordCallback(Handle:owner, Handle:hndl, const String:error[],
 		//if recordtime is type of time
 		if(g_bRecordType == RECORD_TIME){
 			new time;
-			time = SQL_FetchInt(hndl, 3);
+			time = SQL_FetchInt(hndl, 4);
 			
 			//if the new record beats the old one
 			if(g_RunTime[client] <= time)
 				db_updateRecord2(client);
 		}else{ //type of jump
 			new jumps;
-			jumps = SQL_FetchInt(hndl, 2);
+			jumps = SQL_FetchInt(hndl, 5);
 			
 			//if the new record beats the old one
 			if(g_RunJumps[client] <= jumps)
 				db_updateRecord2(client);
 		}
-	//no record found, update!
+	//no record found, update (insert)!
 	}else
 		db_updateRecord2(client);
 }
@@ -448,10 +448,13 @@ public db_updateRecord2(client){
 	//escape some quote characters that could mess up the szQuery
 	SQL_QuoteString(g_hDb, szUName, szName, MAX_NAME_LENGTH*2+1);
 	
-	//@bug: sometimes g_RunTime is 1 too big
+	//@bug?: sometimes g_RunTime is 1 too big
 	Format(szQuery, 255, sql_updateRecord, szUName, g_RunJumps[client], g_RunTime[client], szSteamId, g_szMapName);
 	
 	SQL_TQuery(g_hDb, SQL_CheckCallback, szQuery);
+	
+	//display record panel
+	db_viewRecord(client, szSteamId, g_szMapName);
 }
 
 
