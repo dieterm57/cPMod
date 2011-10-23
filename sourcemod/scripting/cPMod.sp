@@ -206,6 +206,9 @@ Versions
     - Improved cpsettimer closing on disconnect
     - Fixed usp counter not resetting after map change
     - Rewrite of record displaying
+2.0.8
+    - Changed start / endzone boxes to be on the floor
+    - Fixed http://forums.alliedmods.net/showpost.php?p=1571137&postcount=189
 */
 
 #include <sourcemod>
@@ -226,7 +229,7 @@ Versions
 // nothing to change over here //
 //-----------------------------//
 //...
-#define VERSION "2.0.6"
+#define VERSION "2.0.7"
 
 #define YELLOW 0x01
 #define TEAMCOLOR 0x02

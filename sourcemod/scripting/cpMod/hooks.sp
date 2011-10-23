@@ -152,10 +152,9 @@ public Action:ActionTraceTimer(Handle:timer, any:client){
 //------------------------//
 public Action:ActionDrawZoneTimer(Handle:timer, any:client){
 	//draw start yellow
-	DrawBox(g_fMapTimer_start0_cords, g_fMapTimer_start1_cords, 1.0, {255,255,0,255});
-	
+	DrawBox(g_fMapTimer_start0_cords, g_fMapTimer_start1_cords, 1.0, {255,255,0,255}, true);
 	//draw finish green
-	DrawBox(g_fMapTimer_end0_cords, g_fMapTimer_end1_cords, 1.0, {0,255,0,255});
+	DrawBox(g_fMapTimer_end0_cords, g_fMapTimer_end1_cords, 1.0, {0,255,0,255}, true);
 	return Plugin_Continue;
 }
 
@@ -276,11 +275,6 @@ public Action:Action_MapTimer(Handle:timer, any:client){
 					}
 					//update the player record in the database
 					db_updateRecord(client);
-					
-					//display record panel
-					decl String:szSteamId[32];
-					GetClientAuthString(client, szSteamId, 32);
-					db_viewRecord(client, szSteamId, g_szMapName);
 					
 					//disable racing
 					g_bRacing[client] = false;
