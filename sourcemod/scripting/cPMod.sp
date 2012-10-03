@@ -31,7 +31,7 @@
 
 /*
 [cP mod]
-- version 2.0.7
+- version 2.1.0
 
 This plugin allows users to save their location and teleport later.
 It further provides some features for non skilled bHopper like low gravity or a scout.
@@ -81,6 +81,8 @@ sm_cp_gravity      - <1|0> Enable/Disable player gravity.
 sm_cp_healclient   - <1|0> Enable/Disable healing of falldamage.
 sm_cp_hintsound    - <1|0> Enable/Disable playing sound on popup.
 sm_cp_chatvisible  - <1|0> Sets chat output visible to all or not.
+sm_cp_startsound   - <"quake/play.wav"> Sets the sound that is played on starting race.
+sm_cp_finishsound  - <"quake/perfect.mp3"> Sets the sound that is played on finishing race.
 sm_cp_recordsound  - <"quake/holyshit.mp3"> Sets the sound that is played on new record.
 sm_cp_speedunit    - <1|0> Changes the unit of speed displayed in timerpanel [0=default] [1=kmh].
 
@@ -208,7 +210,12 @@ Versions
     - Rewrite of record displaying
 2.0.8
     - Changed start / endzone boxes to be on the floor
-    - Fixed http://forums.alliedmods.net/showpost.php?p=1571137&postcount=189
+    - Fixed checkpoint insert (http://forums.alliedmods.net/showpost.php?p=1571137&postcount=189)
+2.1.0
+    - Added increased timer accuracy to 1/10s (maximum timer resolution!)
+    - Added start sound
+    - Added finish sound
+    - Added player spawn now inside the start area
 */
 
 #include <sourcemod>
@@ -219,7 +226,7 @@ Versions
 #include <cstrike>
 #define REQUIRE_EXTENSIONS
 
-//this variable defines how many checkpoints/player there will be
+//this variable defines how many checkpoints per player there will be
 #define CPLIMIT 10
 
 //this variable defines who is allowed to execute admin commands
@@ -229,7 +236,7 @@ Versions
 // nothing to change over here //
 //-----------------------------//
 //...
-#define VERSION "2.0.7"
+#define VERSION "2.1.0"
 
 #define YELLOW 0x01
 #define TEAMCOLOR 0x02
@@ -295,6 +302,12 @@ new bool:g_bHealClient = false;
 new Handle:g_hcvarHintSound = INVALID_HANDLE;
 new bool:g_bHintSound = false;
 
+new Handle:g_hcvarStartSound = INVALID_HANDLE;
+new String:g_szStartSound[PLATFORM_MAX_PATH];
+new bool:g_bStartSound = false;
+new Handle:g_hcvarFinishSound = INVALID_HANDLE;
+new String:g_szFinishSound[PLATFORM_MAX_PATH];
+new bool:g_bFinishSound = false;
 new Handle:g_hcvarRecordSound = INVALID_HANDLE;
 new String:g_szRecordSound[PLATFORM_MAX_PATH];
 new bool:g_bRecordSound = false;
@@ -311,6 +324,8 @@ new Handle:g_hCleanTimer = INVALID_HANDLE;
 new Handle:g_hcpSetterTimer = INVALID_HANDLE;
 new Float:g_fCpSetBCords[3];
 new Float:g_fCpSetECords[3];
+//coordinates
+new Float:g_fMapTimer_spawn_cords[3];
 new Float:g_fMapTimer_start0_cords[3];
 new Float:g_fMapTimer_start1_cords[3];
 new Float:g_fMapTimer_end0_cords[3];
@@ -319,7 +334,7 @@ new Float:g_fMapTimer_end1_cords[3];
 new Float:g_fPlayerCords[MAXPLAYERS+1][CPLIMIT][3];
 new Float:g_fPlayerAngles[MAXPLAYERS+1][CPLIMIT][3];
 
-//0-based number of current checkpoint in the storage array
+//number of current checkpoint in the storage array
 new g_CurrentCp[MAXPLAYERS+1];
 //amount of checkpoints available
 new g_WholeCp[MAXPLAYERS+1];
@@ -343,6 +358,7 @@ new bool:g_bCpPanelOpen = false;
 //----------//
 #include "cPMod/admin.sp"
 #include "cPMod/commands.sp"
+#include "cPMod/helper.sp"
 #include "cPMod/hooks.sp"
 #include "cPMod/sql.sp"
 
@@ -435,6 +451,12 @@ public OnPluginStart(){
 	g_bChatVisible     = GetConVarBool(g_hcvarChatVisible);
 	HookConVarChange(g_hcvarChatVisible, OnSettingChanged);
 	
+	g_hcvarStartSound = CreateConVar("sm_cp_startsound", "quake/play.wav", "Sets the sound that is played on starting race.", FCVAR_PLUGIN);
+	GetConVarString(g_hcvarStartSound, g_szStartSound, PLATFORM_MAX_PATH);
+	HookConVarChange(g_hcvarStartSound, OnSettingChanged);
+	g_hcvarFinishSound = CreateConVar("sm_cp_finishsound", "quake/perfect.mp3", "Sets the sound that is played on finishing race.", FCVAR_PLUGIN);
+	GetConVarString(g_hcvarFinishSound, g_szFinishSound, PLATFORM_MAX_PATH);
+	HookConVarChange(g_hcvarFinishSound, OnSettingChanged);
 	g_hcvarRecordSound = CreateConVar("sm_cp_recordsound", "quake/holyshit.mp3", "Sets the sound that is played on new record.", FCVAR_PLUGIN);
 	GetConVarString(g_hcvarRecordSound, g_szRecordSound, PLATFORM_MAX_PATH);
 	HookConVarChange(g_hcvarRecordSound, OnSettingChanged);
@@ -461,6 +483,7 @@ public OnPluginStart(){
 	RegConsoleCmd("sm_record", Client_Record, "Displays your record");
 	RegConsoleCmd("sm_precord", Client_Player_Record, "Displays the record of a given player");
 	RegConsoleCmd("sm_restart", Client_Restart, "Restarts your timer");
+	RegConsoleCmd("sm_r", Client_Restart, "Restarts your timer");
 	RegConsoleCmd("sm_stop", Client_Stop, "Stops the timer");
 	RegConsoleCmd("sm_wr", Client_Wr, "Displays the record on the current map");
 	
@@ -486,8 +509,6 @@ public OnMapStart(){
 	g_BeamSpriteRing1 = PrecacheModel("materials/sprites/tp_beam001.vmt");
 	g_BeamSpriteRing2 = PrecacheModel("materials/sprites/crystal_beam1.vmt");
 	PrecacheSound("buttons/blip1.wav", true);
-	
-	setupRecordSound();
 	
 	GetCurrentMap(g_szMapName, MAX_MAP_LENGTH);
 	
@@ -518,20 +539,11 @@ public OnMapStart(){
 	if(g_bCleanupGuns)
 		//create the cleanup timer
 		g_hCleanTimer = CreateTimer(10.0, ActionCleanTimer, _, TIMER_REPEAT);
-}
-
-public setupRecordSound(){
-	//if string not empty
-	new length = strlen(g_szRecordSound);
-	if(length != 0){
-		decl String:szDownloadFile[PLATFORM_MAX_PATH];
-		Format(szDownloadFile, PLATFORM_MAX_PATH, "sound/%s", g_szRecordSound);
-		AddFileToDownloadsTable(szDownloadFile);
 	
-		PrecacheSound(g_szRecordSound, true);
-		g_bRecordSound = true;
-	}else
-		g_bRecordSound = false;
+	//setup sounds
+	setupStartSound();
+	setupFinishSound();
+	setupRecordSound();
 }
 
 //------------------------//
@@ -693,6 +705,12 @@ public OnSettingChanged(Handle:convar, const String:oldValue[], const String:new
 			g_bChatVisible = true;
 		else
 			g_bChatVisible = false;
+	}else if(convar == g_hcvarStartSound){
+		strcopy(g_szStartSound, PLATFORM_MAX_PATH, newValue);
+		setupStartSound();
+	}else if(convar == g_hcvarFinishSound){
+		strcopy(g_szFinishSound, PLATFORM_MAX_PATH, newValue);
+		setupFinishSound();
 	}else if(convar == g_hcvarRecordSound){
 		strcopy(g_szRecordSound, PLATFORM_MAX_PATH, newValue);
 		setupRecordSound();

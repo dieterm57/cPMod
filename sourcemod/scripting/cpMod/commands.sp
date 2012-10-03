@@ -191,10 +191,9 @@ public RestartTimer(client){
 	if(g_bTimer){
 		g_bRacing[client] = false;
 		
-		//respawn player
-		CS_RespawnPlayer(client);
-		
-		PrintToChat(client, "%t", "TimerRestarted", YELLOW,LIGHTGREEN,YELLOW);
+		//teleport to spawn
+		TeleportEntity(client, g_fMapTimer_spawn_cords,NULL_VECTOR,NULL_VECTOR);
+		//PrintToChat(client, "%t", "TimerRestarted", YELLOW,LIGHTGREEN,YELLOW);
 	}else //timer disabled
 		PrintToChat(client, "%t", "TimerDisabled", YELLOW,LIGHTGREEN,YELLOW);
 }

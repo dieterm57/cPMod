@@ -33,6 +33,7 @@
 //-------------------//
 new String:sql_createMap[] = "CREATE TABLE IF NOT EXISTS map (mapname VARCHAR(32) PRIMARY KEY, start0 VARCHAR(38) NOT NULL DEFAULT '0:0:0', start1 VARCHAR(38) NOT NULL DEFAULT '0:0:0', end0 VARCHAR(38) NOT NULL DEFAULT '0:0:0', end1 VARCHAR(38) NOT NULL DEFAULT '0:0:0');";
 new String:sql_createPlayer[] = "CREATE TABLE IF NOT EXISTS player (steamid VARCHAR(32), mapname VARCHAR(32), name VARCHAR(32), cords VARCHAR(38) NOT NULL DEFAULT '0:0:0', angle VARCHAR(38) NOT NULL DEFAULT '0:0:0', jumps INT(12) NOT NULL DEFAULT '-1', runtime INT(12) NOT NULL DEFAULT '-1', date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(steamid,mapname));";
+new String:sql_createMeta[] = "CREATE TABLE meta (version VARCHAR(8) NOT NULL DEFAULT '2.0.8');";
 
 new String:sql_insertMap[] = "INSERT INTO map (mapname) VALUES('%s');";
 new String:sql_insertPlayer[] = "INSERT INTO player (steamid, mapname, name) VALUES('%s', '%s', '%s');";
@@ -41,7 +42,7 @@ new String:sql_updateMapStart[] = "UPDATE map SET start0 = '%s', start1 = '%s' W
 new String:sql_updateMapEnd[] = "UPDATE map SET end0 = '%s', end1 = '%s' WHERE mapname = '%s';";
 
 new String:sql_updatePlayerCheckpoint[] = "UPDATE player SET name = '%s', cords = '%s', angle = '%s', date = CURRENT_TIMESTAMP WHERE steamid = '%s' AND mapname = '%s';";
-new String:sql_updateRecord[] = "UPDATE player SET name = '%s', jumps = '%i', runtime = '%i', date = CURRENT_TIMESTAMP WHERE steamid = '%s' AND mapname = '%s';";
+new String:sql_updateRecord[] = "UPDATE player SET name = '%s', jumps = '%d', runtime = '%d', date = CURRENT_TIMESTAMP WHERE steamid = '%s' AND mapname = '%s';";
 
 new String:sql_selectMapStartStop[] = "SELECT start0, start1, end0, end1 FROM map WHERE mapname = '%s'";
 new String:sql_selectCheckpoint[] = "SELECT cords, angle FROM player WHERE steamid = '%s' AND mapname = '%s';";
@@ -58,8 +59,8 @@ new String:sql_selectPlayerRankJump[] = "SELECT name FROM player WHERE jumps <= 
 new String:sql_selectTimeWorldRecord[] = "SELECT name, runtime, jumps FROM player WHERE mapname = '%s' AND runtime NOT LIKE '-1' ORDER BY runtime ASC LIMIT 10;";
 new String:sql_selectJumpWorldRecord[] = "SELECT name, jumps, runtime FROM player WHERE mapname = '%s' AND jumps NOT LIKE '-1' ORDER BY jumps ASC LIMIT 10;";
 
-new String:sqlite_purgePlayers[] = "DELETE FROM players WHERE date < datetime('now', '-%i days');";
-new String:sql_purgePlayers[] = "DELETE FROM players WHERE date < DATE_SUB(CURDATE(),INTERVAL %i DAY);";
+new String:sqlite_purgePlayers[] = "DELETE FROM players WHERE date < datetime('now', '-%d days');";
+new String:sql_purgePlayers[] = "DELETE FROM players WHERE date < DATE_SUB(CURDATE(),INTERVAL %d DAY);";
 
 
 new String:sqlite_dropMap[] = "DROP TABLE map; VACCUM";
@@ -71,6 +72,9 @@ new String:sql_resetMapTimer[] = "UPDATE map SET start0 = '0:0:0', start1 = '0:0
 new String:sql_resetCheckpoints[] = "UPDATE player SET cords = '0:0:0', angle = '0:0:0' WHERE name LIKE '%s' AND mapname LIKE '%s';";
 new String:sql_resetRecords[] = "UPDATE player SET jumps = '-1', runtime = '-1' WHERE name LIKE '%s' AND mapname LIKE '%s';";
 
+
+//upgrade scripts
+new String:sql_upgrade2_1_0[] = "UPDATE player SET runtime = runtime*10";
 
 //-------------------------//
 // database initialization //
@@ -99,6 +103,9 @@ public db_setupDatabase(){
 	
 	//create the tables
 	db_createTables();
+	
+	//check for updates
+	db_performUpdates();
 }
 
 //-----------------------//
@@ -109,6 +116,20 @@ public db_createTables(){
 	
 	SQL_FastQuery(g_hDb, sql_createMap);
 	SQL_FastQuery(g_hDb, sql_createPlayer);
+	SQL_FastQuery(g_hDb, sql_createMeta);
+	
+	SQL_UnlockDatabase(g_hDb);
+}
+
+//------------------------//
+// perform updates method //
+//------------------------//
+public db_performUpdates(){
+	SQL_LockDatabase(g_hDb);
+	
+	SQL_FastQuery(g_hDb, sql_createMap);
+	SQL_FastQuery(g_hDb, sql_createPlayer);
+	SQL_FastQuery(g_hDb, sql_createMeta);
 	
 	SQL_UnlockDatabase(g_hDb);
 }
@@ -324,10 +345,10 @@ public SQL_ViewRecordCallback3(Handle:owner, Handle:hndl, const String:error[], 
 		decl String:szVrRank[16];
 		Format(szVrName, MAX_NAME_LENGTH, "User: %s", szName);
 		Format(szVrMap, MAX_MAP_LENGTH, "Map: %s", szMapName);
-		Format(szVrJumps, 16, "Jumps: %i", jumps);  
-		Format(szVrTime, 16, "Time: %im %is", time/60, time%60);
+		Format(szVrJumps, 16, "Jumps: %d", jumps);  
+		Format(szVrTime, 16, "Time: %dm %.1fs", time/600, (time-time/600*600)/10.0);
 		Format(szVrDate, 32, "Last Connect: %s", szDate); 
-		Format(szVrRank, 32, "Rank: %i/%i", rank,count); 
+		Format(szVrRank, 32, "Rank: %d/%d", rank, count); 
 		
 		DrawPanelText(panel, szVrName);
 		DrawPanelText(panel, szVrMap);
@@ -495,8 +516,8 @@ public SQL_SelectTimeWRCallback(Handle:owner, Handle:hndl, const String:error[],
 			SQL_FetchString(hndl, 0, szName, MAX_NAME_LENGTH);
 			time = SQL_FetchInt(hndl, 1);
 			jumps = SQL_FetchInt(hndl, 2);
-			Format(szVrTime, 16, "%im %is", time/60, time%60);
-			Format(szValue, 64, "%i. %s - %s @ %i", i, szName, szVrTime, jumps);
+			Format(szVrTime, 16, "Time: %dm %.1fs", time/600, (time-time/600*600)/10.0);
+			Format(szValue, 64, "%d. %s - %s @ %d", i, szName, szVrTime, jumps);
 			DrawPanelText(panel, szValue);
 			i++;
 		}
@@ -552,8 +573,8 @@ public SQL_SelectJumpWRCallback(Handle:owner, Handle:hndl, const String:error[],
 			SQL_FetchString(hndl, 0, szName, MAX_NAME_LENGTH);
 			jumps = SQL_FetchInt(hndl, 1);
 			time = SQL_FetchInt(hndl, 2);
-			Format(szVrTime, 16, "%im %is", time/60, time%60);
-			Format(szValue, 64, "%i. %s - %i @ %s", i, szName, jumps, szVrTime);
+			Format(szVrTime, 16, "Time: %dm %.1fs", time/600, (time-time/600*600)/10.0);
+			Format(szValue, 64, "%d. %s - %d @ %s", i, szName, jumps, szVrTime);
 			DrawPanelText(panel, szValue);
 			i++;
 		}
@@ -657,6 +678,9 @@ public SQL_SelectMapStartStopCallback(Handle:owner, Handle:hndl, const String:er
 			g_fMapTimer_end1_cords[1] = StringToFloat(szCBuff[1]);
 			g_fMapTimer_end1_cords[2] = StringToFloat(szCBuff[2]);
 			g_bStopCordsSet = true;
+			
+			//calculate player spawn point
+			setupPlayerSpawn();
 		}
 	}else //no map start stop area, so insert the map
 		db_insertMap();
@@ -739,8 +763,8 @@ public SQL_SelectWRTimeCallback(Handle:owner, Handle:hndl, const String:error[],
 		g_RecordJumps = SQL_FetchInt(hndl, 0);
 		g_RecordTime = SQL_FetchInt(hndl, 1);
 	}else{ //no record, so set them very easy to beat ;)
-		g_RecordJumps = 999999;
-		g_RecordTime = 999999;
+		g_RecordJumps = 2147483647;
+		g_RecordTime = 2147483647;
 	}
 }
 //---------------------------------//
