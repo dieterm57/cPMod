@@ -173,94 +173,6 @@ public Action:CpSetTimer(Handle:timer, any:client){
 	}
 }
 
-//-----------------------//
-// DrawBox helper method //
-//-----------------------//
-public DrawBox(Float:fFrom[3], Float:fTo[3], Float:fLife, color[4], bool:flat){
-	//initialize tempoary variables bottom front
-	decl Float:fLeftBottomFront[3];
-	fLeftBottomFront[0] = fFrom[0];
-	fLeftBottomFront[1] = fFrom[1];
-	if(flat)
-		fLeftBottomFront[2] = fTo[2]-50;
-	else
-		fLeftBottomFront[2] = fTo[2];
-	
-	decl Float:fRightBottomFront[3];
-	fRightBottomFront[0] = fTo[0];
-	fRightBottomFront[1] = fFrom[1];
-	if(flat)
-		fRightBottomFront[2] = fTo[2]-50;
-	else
-		fRightBottomFront[2] = fTo[2];
-	
-	//initialize tempoary variables bottom back
-	decl Float:fLeftBottomBack[3];
-	fLeftBottomBack[0] = fFrom[0];
-	fLeftBottomBack[1] = fTo[1];
-	if(flat)
-		fLeftBottomBack[2] = fTo[2]-50;
-	else
-		fLeftBottomBack[2] = fTo[2];
-	
-	decl Float:fRightBottomBack[3];
-	fRightBottomBack[0] = fTo[0];
-	fRightBottomBack[1] = fTo[1];
-	if(flat)
-		fRightBottomBack[2] = fTo[2]-50;
-	else
-		fRightBottomBack[2] = fTo[2];
-	
-	//initialize tempoary variables top front
-	decl Float:lefttopfront[3];
-	lefttopfront[0] = fFrom[0];
-	lefttopfront[1] = fFrom[1];
-	if(flat)
-		lefttopfront[2] = fFrom[2]+50;
-	else
-		lefttopfront[2] = fFrom[2]+100;
-	decl Float:righttopfront[3];
-	righttopfront[0] = fTo[0];
-	righttopfront[1] = fFrom[1];
-	if(flat)
-		righttopfront[2] = fFrom[2]+50;
-	else
-		righttopfront[2] = fFrom[2]+100;
-	
-	//initialize tempoary variables top back
-	decl Float:fLeftTopBack[3];
-	fLeftTopBack[0] = fFrom[0];
-	fLeftTopBack[1] = fTo[1];
-	if(flat)
-		fLeftTopBack[2] = fFrom[2]+50;
-	else
-		fLeftTopBack[2] = fFrom[2]+100;
-	decl Float:fRightTopBack[3];
-	fRightTopBack[0] = fTo[0];
-	fRightTopBack[1] = fTo[1];
-	if(flat)
-		fRightTopBack[2] = fFrom[2]+50;
-	else
-		fRightTopBack[2] = fFrom[2]+100;
-	
-	//create the box
-	TE_SetupBeamPoints(fLeftBottomFront,fRightBottomFront,g_BeamSpriteFollow,0,0,0,fLife,3.0,3.0,10,0.0,color,0);TE_SendToAll(0.0);//TE_SendToClient(client, 0.0);
-	TE_SetupBeamPoints(fLeftBottomFront,fLeftBottomBack,g_BeamSpriteFollow,0,0,0,fLife,3.0,3.0,10,0.0,color,0);TE_SendToAll(0.0);//TE_SendToClient(client, 0.0);
-	TE_SetupBeamPoints(fLeftBottomFront,lefttopfront,g_BeamSpriteFollow,0,0,0,fLife,3.0,3.0,10,0.0,color,0);TE_SendToAll(0.0);//TE_SendToClient(client, 0.0);
-	
-	TE_SetupBeamPoints(lefttopfront,righttopfront,g_BeamSpriteFollow,0,0,0,fLife,3.0,3.0,10,0.0,color,0);TE_SendToAll(0.0);//TE_SendToClient(client, 0.0);
-	TE_SetupBeamPoints(lefttopfront,fLeftTopBack,g_BeamSpriteFollow,0,0,0,fLife,3.0,3.0,10,0.0,color,0);TE_SendToAll(0.0);//TE_SendToClient(client, 0.0);
-	TE_SetupBeamPoints(fRightTopBack,fLeftTopBack,g_BeamSpriteFollow,0,0,0,fLife,3.0,3.0,10,0.0,color,0);TE_SendToAll(0.0);//TE_SendToClient(client, 0.0);
-	TE_SetupBeamPoints(fRightTopBack,righttopfront,g_BeamSpriteFollow,0,0,0,fLife,3.0,3.0,10,0.0,color,0);TE_SendToAll(0.0);//TE_SendToClient(client, 0.0);
-	
-	TE_SetupBeamPoints(fRightBottomBack,fLeftBottomBack,g_BeamSpriteFollow,0,0,0,fLife,3.0,3.0,10,0.0,color,0);TE_SendToAll(0.0);//TE_SendToClient(client, 0.0);
-	TE_SetupBeamPoints(fRightBottomBack,fRightBottomFront,g_BeamSpriteFollow,0,0,0,fLife,3.0,3.0,10,0.0,color,0);TE_SendToAll(0.0);//TE_SendToClient(client, 0.0);
-	TE_SetupBeamPoints(fRightBottomBack,fRightTopBack,g_BeamSpriteFollow,0,0,0,fLife,3.0,3.0,10,0.0,color,0);TE_SendToAll(0.0);//TE_SendToClient(client, 0.0);
-	
-	TE_SetupBeamPoints(fRightBottomFront,righttopfront,g_BeamSpriteFollow,0,0,0,fLife,3.0,3.0,10,0.0,color,0);TE_SendToAll(0.0);//TE_SendToClient(client, 0.0);
-	TE_SetupBeamPoints(fLeftBottomBack,fLeftTopBack,g_BeamSpriteFollow,0,0,0,fLife,3.0,3.0,10,0.0,color,0);TE_SendToAll(0.0);//TE_SendToClient(client, 0.0);
-}
-
 //-------------------------//
 // stet timer cords method //
 //-------------------------//
@@ -279,6 +191,9 @@ public SetTimerCords(client, pos){
 			
 			//set start coordinates set to true
 			g_bStartCordsSet = true;
+			
+			//calculate player spawn point
+			setupPlayerSpawn();
 		}else{
 			//add a little offset
 			g_fCpSetBCords[2] -= 50;
@@ -307,7 +222,6 @@ public SetTimerCords(client, pos){
 	
 	EmitSoundToClient(client,"buttons/blip1.wav",client);
 }
-
 
 //--------------------------//
 // admin purge players hook //
@@ -389,7 +303,7 @@ public Action:Admin_ResetCheckpoints(client, args){
 public Action:Admin_ResetRecords(client, args){
 	//if not enough arguments
 	if(args < 1){
-		ReplyToCommand(client, "[SM] Usage: sm_resetplayerrecords <playername> [<mapname>]");
+		ReplyToCommand(client, "[SM] Usage: sm_resetrecords <playername> [<mapname>]");
 		return Plugin_Handled;
 	}else if(args == 1){
 		decl String:szPlayerName[MAX_NAME_LENGTH];
