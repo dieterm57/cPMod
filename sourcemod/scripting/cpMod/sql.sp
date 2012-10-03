@@ -34,6 +34,7 @@
 new String:sql_createMap[] = "CREATE TABLE IF NOT EXISTS map (mapname VARCHAR(32) PRIMARY KEY, start0 VARCHAR(38) NOT NULL DEFAULT '0:0:0', start1 VARCHAR(38) NOT NULL DEFAULT '0:0:0', end0 VARCHAR(38) NOT NULL DEFAULT '0:0:0', end1 VARCHAR(38) NOT NULL DEFAULT '0:0:0');";
 new String:sql_createPlayer[] = "CREATE TABLE IF NOT EXISTS player (steamid VARCHAR(32), mapname VARCHAR(32), name VARCHAR(32), cords VARCHAR(38) NOT NULL DEFAULT '0:0:0', angle VARCHAR(38) NOT NULL DEFAULT '0:0:0', jumps INT(12) NOT NULL DEFAULT '-1', runtime INT(12) NOT NULL DEFAULT '-1', date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(steamid,mapname));";
 new String:sql_createMeta[] = "CREATE TABLE meta (version VARCHAR(8) NOT NULL DEFAULT '2.0.8');";
+new String:sql_initMeta[] = "INSERT INTO meta VALUES()";
 
 new String:sql_insertMap[] = "INSERT INTO map (mapname) VALUES('%s');";
 new String:sql_insertPlayer[] = "INSERT INTO player (steamid, mapname, name) VALUES('%s', '%s', '%s');";
@@ -74,6 +75,8 @@ new String:sql_resetRecords[] = "UPDATE player SET jumps = '-1', runtime = '-1' 
 
 
 //upgrade scripts
+new String:sql_selectVersion[] = "SELECT version FROM meta;";
+new String:sql_updateVersion[] = "UPDATE meta SET version = '%s';";
 new String:sql_upgrade2_1_0[] = "UPDATE player SET runtime = runtime*10";
 
 //-------------------------//
@@ -125,21 +128,57 @@ public db_createTables(){
 // perform updates method //
 //------------------------//
 public db_performUpdates(){
-	SQL_LockDatabase(g_hDb);
-	
-	SQL_FastQuery(g_hDb, sql_createMap);
-	SQL_FastQuery(g_hDb, sql_createPlayer);
-	SQL_FastQuery(g_hDb, sql_createMeta);
-	
-	SQL_UnlockDatabase(g_hDb);
+	SQL_TQuery(g_hDb, SQL_CheckUpdateCallback, sql_selectVersion);
 }
+//----------//
+// callback //
+//----------//
+public SQL_CheckUpdateCallback(Handle:owner, Handle:hndl, const String:error[], any:data){
+	//if there is a result
+	if(SQL_HasResultSet(hndl) && SQL_FetchRow(hndl)){
+		decl String:szVersion[8];
+		
+		//get the result
+		SQL_FetchString(hndl, 0, szVersion, 8);
+		
+		new comparison = compareVersionStrings(szVersion, "2.1.0");
+		if(comparison < 0){
+			LogMessage("Performing 2.1.0 database update...");
+			
+			//perform 2.1.0 update
+			SQL_TQuery(g_hDb, SQL_CheckCallback, sql_upgrade2_1_0);
+			
+			//update version in database
+			db_updateVersion("2.1.0");
+		}
+	}else{ //init data
+		SQL_TQuery(g_hDb, SQL_InitMetaCallback, sql_initMeta);
+	}
+}
+//----------//
+// callback //
+//----------//
+public SQL_InitMetaCallback(Handle:owner, Handle:hndl, const String:error[], any:data){
+	//simply try the update again
+	db_performUpdates();
+}
+
+//------------------------------//
+// update version method //
+//------------------------------//
+public db_updateVersion(String:szVersion[]){
+	decl String:szQuery[255];
+	Format(szQuery, 255, sql_updateVersion, "2.1.0");
+	
+	SQL_TQuery(g_hDb, SQL_CheckCallback, szQuery);
+}
+
 
 //-------------------//
 // insert map method //
 //-------------------//
 public db_insertMap(){
 	decl String:szQuery[255];
-	
 	Format(szQuery, 255, sql_insertMap, g_szMapName);
 		
 	SQL_TQuery(g_hDb, SQL_CheckCallback, szQuery);
@@ -217,7 +256,6 @@ public db_updatePlayerCheckpoint(client, current){
 //---------------------//
 public db_viewRecord(client, String:szSteamId[32], String:szMapName[MAX_MAP_LENGTH]){
 	decl String:szQuery[255];
-	
 	Format(szQuery, 255, sql_selectRecord, szSteamId, szMapName);
 	
 	SQL_TQuery(g_hDb, SQL_ViewRecordCallback, szQuery, client);
@@ -484,7 +522,6 @@ public db_updateRecord2(client){
 //---------------------------------//
 public db_selectTimeWorldRecord(client){
 	decl String:szQuery[255];
-	
 	Format(szQuery, 255, sql_selectTimeWorldRecord, g_szMapName);
 	
 	SQL_TQuery(g_hDb, SQL_SelectTimeWRCallback, szQuery, client);
@@ -541,7 +578,6 @@ public TimeWorldRecordPanelHandler(Handle:menu, MenuAction:action, param1, param
 //---------------------------------//
 public db_selectJumpWorldRecord(client){
 	decl String:szQuery[255];
-	
 	Format(szQuery, 255, sql_selectJumpWorldRecord, g_szMapName);
 	
 	SQL_TQuery(g_hDb, SQL_SelectJumpWRCallback, szQuery, client);
@@ -625,7 +661,6 @@ public SQL_SelectPlayerCallback(Handle:owner, Handle:hndl, const String:error[],
 //----------------------------------//
 public db_selectMapStartStop(){
 	decl String:szQuery[255];
-	
 	Format(szQuery, 255, sql_selectMapStartStop, g_szMapName);
 	
 	SQL_TQuery(g_hDb, SQL_SelectMapStartStopCallback, szQuery);
@@ -746,7 +781,6 @@ public SQL_SelectCheckpointCallback(Handle:owner, Handle:hndl, const String:erro
 //---------------------------------//
 public db_selectWorldRecordTime(){
 	decl String:szQuery[255];
-	
 	Format(szQuery, 255, sql_selectWorldRecordTime, g_szMapName);
 	
 	SQL_TQuery(g_hDb, SQL_SelectWRTimeCallback, szQuery);
@@ -772,7 +806,6 @@ public SQL_SelectWRTimeCallback(Handle:owner, Handle:hndl, const String:error[],
 //---------------------------------//
 public db_selectWorldRecordJump(){
 	decl String:szQuery[255];
-	
 	Format(szQuery, 255, sql_selectWorldRecordJump, g_szMapName);
 	
 	SQL_TQuery(g_hDb, SQL_SelectWRJumpCallback, szQuery);
@@ -852,7 +885,6 @@ public db_dropPlayer(client){
 //--------------------//
 public db_resetMapTimer(client, String:szMapName[MAX_MAP_LENGTH]){
 	decl String:szQuery[255];
-	
 	Format(szQuery, 255, sql_resetMapTimer, g_szMapName);
 	
 	SQL_LockDatabase(g_hDb);
@@ -914,5 +946,5 @@ public db_resetPlayerRecords(client, String:szPlayerName[MAX_NAME_LENGTH], Strin
 //-----------------//
 public SQL_CheckCallback(Handle:owner, Handle:hndl, const String:error[], any:data){
 	if(hndl == INVALID_HANDLE)
-		LogError("[cP Mod] Error inserting into database (%s)", error);
+		LogError("[cP Mod] Error inserting into database (%s).", error);
 }
