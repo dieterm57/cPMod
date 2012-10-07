@@ -121,6 +121,10 @@ public Action:Client_Player_Record(client, args){
 	}
 	return Plugin_Handled;
 }
+public Action:Client_Start(client, args){
+	RestartTimer(client);
+	return Plugin_Handled;
+}
 public Action:Client_Restart(client, args){
 	RestartTimer(client);
 	return Plugin_Handled;
@@ -192,7 +196,8 @@ public RestartTimer(client){
 		g_bRacing[client] = false;
 		
 		//teleport to spawn
-		TeleportEntity(client, g_fMapTimer_spawn_cords,NULL_VECTOR,NULL_VECTOR);
+		if(g_bStartCordsSet)
+			TeleportEntity(client, g_fMapTimer_spawn_cords,NULL_VECTOR,NULL_VECTOR);
 		//PrintToChat(client, "%t", "TimerRestarted", YELLOW,LIGHTGREEN,YELLOW);
 	}else //timer disabled
 		PrintToChat(client, "%t", "TimerDisabled", YELLOW,LIGHTGREEN,YELLOW);
