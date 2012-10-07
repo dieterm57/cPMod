@@ -61,6 +61,7 @@ Cmds:
 
 !record <map>               - Displays your record
 !precord <name> [<mapname>] - Displays the record of a given player
+!start                      - Teleports you to the start
 !restart                    - Restarts your timer
 !stop                       - Stops the timer
 !wr                         - Displays the record on the current map
@@ -213,9 +214,10 @@ Versions
     - Fixed checkpoint insert (http://forums.alliedmods.net/showpost.php?p=1571137&postcount=189)
 2.1.0
     - Added increased timer accuracy to 1/10s (maximum timer resolution!)
+    - Added !start command
     - Added start sound
     - Added finish sound
-    - Added player spawn now inside the start area
+    - Added player spawn now inside the start area after start / restart
 */
 
 #include <sourcemod>
@@ -482,6 +484,7 @@ public OnPluginStart(){
 	
 	RegConsoleCmd("sm_record", Client_Record, "Displays your record");
 	RegConsoleCmd("sm_precord", Client_Player_Record, "Displays the record of a given player");
+	RegConsoleCmd("sm_start", Client_Start, "Teleports you to the start");
 	RegConsoleCmd("sm_restart", Client_Restart, "Restarts your timer");
 	RegConsoleCmd("sm_r", Client_Restart, "Restarts your timer");
 	RegConsoleCmd("sm_stop", Client_Stop, "Stops the timer");

@@ -33,8 +33,8 @@
 //-------------------//
 new String:sql_createMap[] = "CREATE TABLE IF NOT EXISTS map (mapname VARCHAR(32) PRIMARY KEY, start0 VARCHAR(38) NOT NULL DEFAULT '0:0:0', start1 VARCHAR(38) NOT NULL DEFAULT '0:0:0', end0 VARCHAR(38) NOT NULL DEFAULT '0:0:0', end1 VARCHAR(38) NOT NULL DEFAULT '0:0:0');";
 new String:sql_createPlayer[] = "CREATE TABLE IF NOT EXISTS player (steamid VARCHAR(32), mapname VARCHAR(32), name VARCHAR(32), cords VARCHAR(38) NOT NULL DEFAULT '0:0:0', angle VARCHAR(38) NOT NULL DEFAULT '0:0:0', jumps INT(12) NOT NULL DEFAULT '-1', runtime INT(12) NOT NULL DEFAULT '-1', date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(steamid,mapname));";
-new String:sql_createMeta[] = "CREATE TABLE meta (version VARCHAR(8) NOT NULL DEFAULT '2.0.8');";
-new String:sql_initMeta[] = "INSERT INTO meta VALUES()";
+new String:sql_createMeta[] = "CREATE TABLE meta (version VARCHAR(8) NOT NULL);";
+new String:sql_initMeta[] = "INSERT INTO meta VALUES('2.0.8')";
 
 new String:sql_insertMap[] = "INSERT INTO map (mapname) VALUES('%s');";
 new String:sql_insertPlayer[] = "INSERT INTO player (steamid, mapname, name) VALUES('%s', '%s', '%s');";
@@ -77,7 +77,7 @@ new String:sql_resetRecords[] = "UPDATE player SET jumps = '-1', runtime = '-1' 
 //upgrade scripts
 new String:sql_selectVersion[] = "SELECT version FROM meta;";
 new String:sql_updateVersion[] = "UPDATE meta SET version = '%s';";
-new String:sql_upgrade2_1_0[] = "UPDATE player SET runtime = runtime*10";
+new String:sql_upgrade2_1_0[] = "UPDATE player SET runtime = runtime*10 WHERE runtime != -1";
 
 //-------------------------//
 // database initialization //
@@ -221,6 +221,9 @@ public db_updateMapStartStop(client, String:szBCords[], String:szECords[], pos){
 		PrintToChat(client, "%t", "EndSet", YELLOW,LIGHTGREEN,YELLOW);
 	}
 	SQL_TQuery(g_hDb, SQL_CheckCallback, szQuery);
+	
+	//recalculate player spawn point
+	setupPlayerSpawn();
 }
 
 //---------------------------------//

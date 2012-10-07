@@ -78,10 +78,6 @@ public Action:Event_player_spawn(Handle:event, const String:name[], bool:dontBro
 				CpAdminPanel(client);
 			}
 		}
-		
-		//teleport to spawn
-		if(g_bStartCordsSet)
-			TeleportEntity(client, g_fMapTimer_spawn_cords,NULL_VECTOR,NULL_VECTOR);
 	}
 }
 //------------------//
