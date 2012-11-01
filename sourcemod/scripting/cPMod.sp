@@ -218,6 +218,7 @@ Versions
     - Added start sound
     - Added finish sound
     - Added player spawn now inside the start area after start / restart
+    - Slightly changed time representation
 */
 
 #include <sourcemod>

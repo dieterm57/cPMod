@@ -216,7 +216,7 @@ public Action:Action_MapTimer(Handle:timer, any:client){
 				//calculate time, jumps and speed (gets called every 0.1 sec!)
 				new minutes = g_RunTime[client]/600;
 				new Float:seconds = (g_RunTime[client]-minutes*600)/10.0;
-				Format(szTime, 16, "%dm %.1fs", minutes, seconds);
+				Format(szTime, 16, "%d:%.1f", minutes, seconds);
 				Format(szJumps, 16, "%d", g_RunJumps[client]);
 				decl Float:fVelocity[3];
 				GetEntPropVector(client, Prop_Data, "m_vecVelocity", fVelocity);

@@ -141,6 +141,7 @@ public SQL_CheckUpdateCallback(Handle:owner, Handle:hndl, const String:error[], 
 		//get the result
 		SQL_FetchString(hndl, 0, szVersion, 8);
 		
+		//check for 2.1.0 update
 		new comparison = compareVersionStrings(szVersion, "2.1.0");
 		if(comparison < 0){
 			LogMessage("Performing 2.1.0 database update...");
@@ -168,7 +169,7 @@ public SQL_InitMetaCallback(Handle:owner, Handle:hndl, const String:error[], any
 //------------------------------//
 public db_updateVersion(String:szVersion[]){
 	decl String:szQuery[255];
-	Format(szQuery, 255, sql_updateVersion, "2.1.0");
+	Format(szQuery, 255, sql_updateVersion, szVersion);
 	
 	SQL_TQuery(g_hDb, SQL_CheckCallback, szQuery);
 }
@@ -387,7 +388,7 @@ public SQL_ViewRecordCallback3(Handle:owner, Handle:hndl, const String:error[], 
 		Format(szVrName, MAX_NAME_LENGTH, "User: %s", szName);
 		Format(szVrMap, MAX_MAP_LENGTH, "Map: %s", szMapName);
 		Format(szVrJumps, 16, "Jumps: %d", jumps);  
-		Format(szVrTime, 16, "Time: %dm %.1fs", time/600, (time-time/600*600)/10.0);
+		Format(szVrTime, 16, "Time: %d:%.1f", (time/600), ((time-(time/600.0*600.0))/10.0));
 		Format(szVrDate, 32, "Last Connect: %s", szDate); 
 		Format(szVrRank, 32, "Rank: %d/%d", rank, count); 
 		
@@ -510,7 +511,6 @@ public db_updateRecord2(client){
 	//escape some quote characters that could mess up the szQuery
 	SQL_QuoteString(g_hDb, szUName, szName, MAX_NAME_LENGTH*2+1);
 	
-	//@bug?: sometimes g_RunTime is 1 too big
 	Format(szQuery, 255, sql_updateRecord, szUName, g_RunJumps[client], g_RunTime[client], szSteamId, g_szMapName);
 	
 	SQL_TQuery(g_hDb, SQL_CheckCallback, szQuery);
@@ -541,7 +541,6 @@ public SQL_SelectTimeWRCallback(Handle:owner, Handle:hndl, const String:error[],
 	decl String:szName[MAX_NAME_LENGTH];
 	new time;
 	new jumps;
-	decl String:szVrTime[16];
 	
 	new Handle:panel = CreatePanel();
 	DrawPanelText(panel, "byaaaaah's [cP Mod] - TimeWorldRecord");
@@ -556,8 +555,7 @@ public SQL_SelectTimeWRCallback(Handle:owner, Handle:hndl, const String:error[],
 			SQL_FetchString(hndl, 0, szName, MAX_NAME_LENGTH);
 			time = SQL_FetchInt(hndl, 1);
 			jumps = SQL_FetchInt(hndl, 2);
-			Format(szVrTime, 16, "Time: %dm %.1fs", time/600, (time-time/600*600)/10.0);
-			Format(szValue, 64, "%d. %s - %s @ %d", i, szName, szVrTime, jumps);
+			Format(szValue, 64, "%d. %2d:%2.1f - %s (%d jumps)", i, szName, (time/600), ((time-(time/600.0)*600.0)/10.0), jumps);
 			DrawPanelText(panel, szValue);
 			i++;
 		}
@@ -597,7 +595,6 @@ public SQL_SelectJumpWRCallback(Handle:owner, Handle:hndl, const String:error[],
 	decl String:szName[MAX_NAME_LENGTH];
 	new jumps;
 	new time;
-	decl String:szVrTime[16];
 	
 	new Handle:panel = CreatePanel();
 	DrawPanelText(panel, "byaaaaah's [cP Mod] - JumpWorldRecord");
@@ -612,8 +609,7 @@ public SQL_SelectJumpWRCallback(Handle:owner, Handle:hndl, const String:error[],
 			SQL_FetchString(hndl, 0, szName, MAX_NAME_LENGTH);
 			jumps = SQL_FetchInt(hndl, 1);
 			time = SQL_FetchInt(hndl, 2);
-			Format(szVrTime, 16, "Time: %dm %.1fs", time/600, (time-time/600*600)/10.0);
-			Format(szValue, 64, "%d. %s - %d @ %s", i, szName, jumps, szVrTime);
+			Format(szValue, 64, "%d. %2d:%2.1f - %s (%d jumps)", i, szName, (time/600), ((time-time/600*600)/10.0), jumps);
 			DrawPanelText(panel, szValue);
 			i++;
 		}
