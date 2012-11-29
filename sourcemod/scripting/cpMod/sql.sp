@@ -388,7 +388,7 @@ public SQL_ViewRecordCallback3(Handle:owner, Handle:hndl, const String:error[], 
 		Format(szVrName, MAX_NAME_LENGTH, "User: %s", szName);
 		Format(szVrMap, MAX_MAP_LENGTH, "Map: %s", szMapName);
 		Format(szVrJumps, 16, "Jumps: %d", jumps);  
-		Format(szVrTime, 16, "Time: %d:%.1f", (time/600), ((time-(time/600.0*600.0))/10.0));
+		Format(szVrTime, 16, "Time: %02d:%02.1f", (time/600), ((time%600)/10.0));
 		Format(szVrDate, 32, "Last Connect: %s", szDate); 
 		Format(szVrRank, 32, "Rank: %d/%d", rank, count); 
 		
@@ -546,7 +546,7 @@ public SQL_SelectTimeWRCallback(Handle:owner, Handle:hndl, const String:error[],
 	DrawPanelText(panel, "byaaaaah's [cP Mod] - TimeWorldRecord");
 	DrawPanelText(panel, " ");
 	
-	//if there is allready a entry
+	//if there is already a entry
 	if(SQL_HasResultSet(hndl)){
 		new i = 1;
 		//loop all results
@@ -555,7 +555,8 @@ public SQL_SelectTimeWRCallback(Handle:owner, Handle:hndl, const String:error[],
 			SQL_FetchString(hndl, 0, szName, MAX_NAME_LENGTH);
 			time = SQL_FetchInt(hndl, 1);
 			jumps = SQL_FetchInt(hndl, 2);
-			Format(szValue, 64, "%d. %2d:%2.1f - %s (%d jumps)", i, szName, (time/600), ((time-(time/600.0)*600.0)/10.0), jumps);
+			Format(szValue, 64, "%d. %02d:%02.1f - %s (%d jumps)", i, (time/600), ((time%600)/10.0), szName, jumps);
+			
 			DrawPanelText(panel, szValue);
 			i++;
 		}
@@ -600,7 +601,7 @@ public SQL_SelectJumpWRCallback(Handle:owner, Handle:hndl, const String:error[],
 	DrawPanelText(panel, "byaaaaah's [cP Mod] - JumpWorldRecord");
 	DrawPanelText(panel, " ");
 	
-	//if there is allready a entry
+	//if there is already a entry
 	if(SQL_HasResultSet(hndl)){
 		new i = 1;
 		//loop all results
@@ -609,7 +610,7 @@ public SQL_SelectJumpWRCallback(Handle:owner, Handle:hndl, const String:error[],
 			SQL_FetchString(hndl, 0, szName, MAX_NAME_LENGTH);
 			jumps = SQL_FetchInt(hndl, 1);
 			time = SQL_FetchInt(hndl, 2);
-			Format(szValue, 64, "%d. %2d:%2.1f - %s (%d jumps)", i, szName, (time/600), ((time-time/600*600)/10.0), jumps);
+			Format(szValue, 64, "%d. %02d:%02.1f - %s (%d jumps)", i, (time/600), ((time%600)/10.0), szName, jumps);
 			DrawPanelText(panel, szValue);
 			i++;
 		}
